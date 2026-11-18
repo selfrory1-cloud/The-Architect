@@ -1,0 +1,2 @@
+pyperclip==1.11.0
+talespire-encoding==1.3.0

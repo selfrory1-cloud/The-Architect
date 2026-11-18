@@ -1,0 +1,60 @@
+{
+  "Tavern_Floor_01_01": {
+    "kind": "tile",
+    "uuid": "cf6063bb-5c6e-4107-b3e9-9c0c5ac75768",
+    "size": [1, 1],
+    "height": 2.0,
+    "surface_offset": 0.5,
+    "front": "S",
+    "ports": [
+      {"side": "N", "x": 0.5, "z": 1},
+      {"side": "S", "x": 0.5, "z": 0},
+      {"side": "E", "x": 1, "z": 0.5},
+      {"side": "W", "x": 0, "z": 0.5}
+    ]
+  },
+  "Tavern_Wall_Floor_01_01": {
+    "kind": "tile",
+    "uuid": "05b8b832-e457-4ea7-88d5-25fa44037f39",
+    "size": [1, 1],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {"side": "N", "x": 0.5, "z": 1},
+      {"side": "S", "x": 0.5, "z": 0},
+      {"side": "E", "x": 1, "z": 0.5},
+      {"side": "W", "x": 0, "z": 0.5}
+    ]
+  },
+  "Tavern_Wall_Floor_Corner_01_01": {
+    "kind": "tile",
+    "uuid": "ff6b5a27-a041-4ba1-ad33-01d82c77bb34",
+    "size": [1, 1],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {"side": "N", "x": 0.5, "z": 1},
+      {"side": "S", "x": 0.5, "z": 0},
+      {"side": "E", "x": 1, "z": 0.5},
+      {"side": "W", "x": 0, "z": 0.5}
+    ]
+  },
+  "shugun_smallDoor_01": {
+    "kind": "tile",
+    "uuid": "6432f1d9-9677-4db8-8a97-171b142ad556",
+    "size": [1, 1],
+    "height": 2.0,
+    "front": "S",
+    "mount_offsets": {
+      "S": [0, 0],
+      "W": [0, 0.5],
+      "N": [0, 0]
+    },
+    "ports": [
+      {"side": "N", "x": 0.5, "z": 1},
+      {"side": "S", "x": 0.5, "z": 0},
+      {"side": "E", "x": 1, "z": 0.5},
+      {"side": "W", "x": 0, "z": 0.5}
+    ]
+  }
+}

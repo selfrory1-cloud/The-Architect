@@ -1,0 +1,11 @@
+{
+  "placements": [
+    {"id": "straight_horizontal", "asset": "wall_straight", "x": 0, "z": 0, "y": 0, "target_ports": ["W", "E"], "desired_front": "N"},
+    {"id": "corner", "asset": "wall_corner", "x": 1, "z": 0, "y": 0, "target_ports": ["W", "N"], "desired_front": "NE"},
+    {"id": "straight_vertical", "asset": "wall_straight", "x": 1, "z": 1, "y": 0, "target_ports": ["S", "N"], "desired_front": "E"}
+  ],
+  "links": [
+    ["straight_horizontal", "corner"],
+    ["corner", "straight_vertical"]
+  ]
+}
