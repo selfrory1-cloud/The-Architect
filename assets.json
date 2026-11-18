@@ -1,0 +1,544 @@
+{
+  "Tavern_Wall_01": {
+    "kind": "tile",
+    "uuid": "55421077-5672-492d-9609-89befbf9eb9d",
+    "calibrated": true,
+    "size": [
+      2,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "W",
+        "x": 0,
+        "z": 0.25
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 0.25
+      }
+    ]
+  },
+  "Tavern_Door_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000001",
+    "calibrated": false,
+    "size": [
+      2,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "W",
+        "x": 0,
+        "z": 0.25
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 0.25
+      }
+    ]
+  },
+  "Tavern_Floor_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000002",
+    "calibrated": false,
+    "size": [
+      2,
+      2
+    ],
+    "height": 0.25,
+    "front": "S",
+    "ports": [
+      {
+        "side": "N",
+        "x": 1,
+        "z": 2
+      },
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 1
+      },
+      {
+        "side": "W",
+        "x": 0,
+        "z": 1
+      },
+      {
+        "side": "TOP",
+        "x": 1,
+        "z": 1
+      }
+    ]
+  },
+  "Tavern_Stairs_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000003",
+    "calibrated": false,
+    "size": [
+      2,
+      4
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "N",
+        "x": 1,
+        "z": 4
+      }
+    ]
+  },
+  "Tavern_Roof_Flat_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000004",
+    "calibrated": false,
+    "size": [
+      2,
+      2
+    ],
+    "height": 0.25,
+    "front": "S",
+    "ports": [
+      {
+        "side": "N",
+        "x": 1,
+        "z": 2
+      },
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 1
+      },
+      {
+        "side": "W",
+        "x": 0,
+        "z": 1
+      },
+      {
+        "side": "TOP",
+        "x": 1,
+        "z": 1
+      }
+    ]
+  },
+  "Stone_Wall_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000005",
+    "calibrated": false,
+    "size": [
+      2,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "W",
+        "x": 0,
+        "z": 0.25
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 0.25
+      }
+    ]
+  },
+  "Stone_Door_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000006",
+    "calibrated": false,
+    "size": [
+      2,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "W",
+        "x": 0,
+        "z": 0.25
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 0.25
+      }
+    ]
+  },
+  "Stone_Floor_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000007",
+    "calibrated": false,
+    "size": [
+      2,
+      2
+    ],
+    "height": 0.25,
+    "front": "S",
+    "ports": [
+      {
+        "side": "N",
+        "x": 1,
+        "z": 2
+      },
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 1
+      },
+      {
+        "side": "W",
+        "x": 0,
+        "z": 1
+      },
+      {
+        "side": "TOP",
+        "x": 1,
+        "z": 1
+      }
+    ]
+  },
+  "Stone_Stairs_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000008",
+    "calibrated": false,
+    "size": [
+      2,
+      4
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "N",
+        "x": 1,
+        "z": 4
+      }
+    ]
+  },
+  "Stone_Roof_Flat_01": {
+    "kind": "tile",
+    "uuid": "00000000-0000-4000-8000-000000000009",
+    "calibrated": false,
+    "size": [
+      2,
+      2
+    ],
+    "height": 0.25,
+    "front": "S",
+    "ports": [
+      {
+        "side": "N",
+        "x": 1,
+        "z": 2
+      },
+      {
+        "side": "S",
+        "x": 1,
+        "z": 0
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 1
+      },
+      {
+        "side": "W",
+        "x": 0,
+        "z": 1
+      },
+      {
+        "side": "TOP",
+        "x": 1,
+        "z": 1
+      }
+    ]
+  },
+  "Table_Round_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000010",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Chair_Wood_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000011",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Bar_Counter_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000012",
+    "calibrated": false,
+    "size": [
+      2,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Barrel_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000013",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Crate_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000014",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Bed_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000015",
+    "calibrated": false,
+    "size": [
+      1,
+      2
+    ],
+    "height": 0.75,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Bookshelf_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000016",
+    "calibrated": false,
+    "size": [
+      1,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Fireplace_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000017",
+    "calibrated": false,
+    "size": [
+      2,
+      1
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Altar_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000018",
+    "calibrated": false,
+    "size": [
+      2,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Brazier_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000019",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Bench_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000020",
+    "calibrated": false,
+    "size": [
+      2,
+      1
+    ],
+    "height": 0.75,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Cage_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000021",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Weapon_Rack_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000022",
+    "calibrated": false,
+    "size": [
+      1,
+      0.5
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  },
+  "Cauldron_01": {
+    "kind": "prop",
+    "uuid": "00000000-0000-4000-8000-000000000023",
+    "calibrated": false,
+    "size": [
+      1,
+      1
+    ],
+    "height": 1.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "BASE",
+        "x": 0,
+        "z": 0
+      }
+    ]
+  }
+}

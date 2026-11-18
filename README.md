@@ -1,2 +1,48 @@
-# The-Architect
-Talespire Builder
+# The Architect
+Procedural TaleSpire builder. Fill in a web form (theme, floors, rooms per floor, room size…) and get a
+ready-to-paste TaleSpire slab code (`H4sIA...`) plus a floor-plan preview.
+
+## Quick start
+```bash
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip ...
+.venv/bin/python app.py                           # open http://127.0.0.1:5000
+```
+Copy the slab code from the page and paste it into TaleSpire (Ctrl+V).
+
+Environment options: `PORT`, `HOST`, `FLASK_DEBUG=1`, and for the optional LLM step
+`OLLAMA_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.1:8b`), `OLLAMA_TIMEOUT`.
+
+## Architecture
+| File | Role |
+|------|------|
+| `app.py`, `templates/`, `static/` | Flask web UI + JSON API (`/api/generate`, `/api/decode`, `/api/library`) |
+| `architect/query.py` | Form → validated JSON recipe. Optional Ollama LLM only names rooms / picks props — never coordinates |
+| `architect/builder.py` | Port-snapping engine: floor growth, clockwise wall chains, doors, stairwells, multi-level stacking, zone prefabs |
+| `architect/slab.py` | TaleSpire slab v2 encoder/decoder ([spec](https://github.com/Bouncyrock/DumbSlabStats/blob/master/format.md)) |
+| `assets.json` | Calibrated asset library (uuid, kind, size, height, ports) |
+| `themes.json` | Themes → wall/door/floor/stairs/roof assets, room roles and prop sets |
+
+How a build is assembled:
+1. Each room is compiled as a local **zone prefab**: floor tiles grow by snapping S→N / W→E ports; walls are
+   chained around the perimeter, each wall's `W` port snapped to the previous wall's `E` port (the chain must
+   close or the build fails); doors replace a wall segment; props snap their `BASE` port to a floor tile's `TOP` port.
+2. Zones snap together through zone ports (W↔E, S↔N). Shared walls are placed once, with an interior door.
+3. Levels stack at `level × wall height` (from `assets.json`). Room 1 of each level gets a stairwell
+   (alternating columns) and the level above gets a matching floor opening. Rooms with nothing above get a flat roof.
+4. All zones are merged and encoded into one slab.
+
+## Calibrating assets
+Only `Tavern_Wall_01` has a real UUID. Every other asset has a placeholder UUID and `"calibrated": false`
+(the site warns about these; they won't appear in TaleSpire). To calibrate:
+1. In TaleSpire, place the asset alone, select and copy it.
+2. Paste the slab into the **Slab decoder** on the site to read its UUID.
+3. Update the entry in `assets.json`: `uuid`, `size`, `height`, `ports`, and set `"calibrated": true`.
+
+If in-game tests show rotations turning the wrong way, flip `ROTATION_CLOCKWISE` in `architect/builder.py`.
+
+## Tests
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest
+```
