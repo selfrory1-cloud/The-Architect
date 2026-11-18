@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from blueprint import CORNER, DOOR, FLOOR, WALL, compile_blueprint
 from builder import (
     build_room_layout,
     load_smart_library,
@@ -17,6 +18,55 @@ from ts_encoding import TSSlab
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BLUEPRINT = ROOT / "blueprints" / "two_room_tavern.json"
+
+
+class BlueprintTests(unittest.TestCase):
+    def setUp(self):
+        self.assets = load_smart_library(ROOT / "assets.json")
+        self.plan = json.loads(BLUEPRINT.read_text(encoding="utf-8"))
+
+    def test_tavern_has_one_divider_with_an_open_passage_and_two_exterior_doors(self):
+        solved = compile_blueprint(self.assets, self.plan)
+        base = {
+            (piece["x"], piece["z"]): piece["asset"]
+            for piece in solved["placements"] if piece["y"] == 0
+        }
+        self.assertEqual(len(solved["placements"]), 130)
+        self.assertEqual(set(base), {(x, z) for x in range(16) for z in range(8)})
+        self.assertEqual([base[8, z] for z in range(8)], [WALL] * 4 + [FLOOR] + [WALL] * 3)
+        self.assertEqual([base[7, z] for z in range(1, 7)], [FLOOR] * 6)
+        self.assertEqual({cell for cell, asset in base.items() if asset == CORNER},
+                         {(0, 0), (0, 7), (15, 0), (15, 7)})
+        self.assertEqual(solved["links_checked"], 232)
+
+    def test_blueprint_cli_exports_both_doors_without_ollama(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "tavern.txt"
+            with patch("builder.request_recipe") as request_recipe:
+                status = main([
+                    "--blueprint", str(BLUEPRINT), "--assets", str(ROOT / "assets.json"),
+                    "--output", str(output), "--no-clipboard",
+                ])
+            request_recipe.assert_not_called()
+            self.assertEqual(status, 0)
+            slab = TSSlab()
+            slab.decode_slab(output.read_text(encoding="utf-8"))
+        door_group = next(
+            group for group in slab.data["layouts"] if group["uuid"] == self.assets[DOOR]["uuid"]
+        )
+        self.assertCountEqual(
+            door_group["instances"],
+            [{"pos_x": 0.0, "pos_y": 0.5, "pos_z": 4.0, "degrees": 0.0},
+             {"pos_x": 12.0, "pos_y": 0.5, "pos_z": 7.0, "degrees": 90.0}],
+        )
+
+    def test_rejects_corner_door_and_a_misaligned_socket(self):
+        with self.assertRaisesRegex(ValueError, "North door"):
+            compile_blueprint(self.assets, {**self.plan, "north_door_clearance_from_east": 0})
+        self.assets[CORNER]["ports"][0]["z"] = 0.75
+        with self.assertRaisesRegex(ValueError, "snapped footprint"):
+            compile_blueprint(self.assets, self.plan)
 
 
 class BuilderTests(unittest.TestCase):

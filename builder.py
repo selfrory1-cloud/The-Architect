@@ -11,6 +11,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from asset_tools import unique_object
+from blueprint import compile_blueprint
 from placement_solver import solve, write_slab
 
 
@@ -234,9 +236,11 @@ def copy_slab_to_clipboard(slab_text: str) -> str | None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--prompt", default=DEFAULT_PROMPT, help="Natural-language build request")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--prompt", default=DEFAULT_PROMPT, help="Natural-language build request")
+    source.add_argument("--blueprint", type=Path, help="Compile a two-room JSON blueprint without Ollama")
     parser.add_argument("--assets", type=Path, default=Path("assets.json"))
-    parser.add_argument("--output", type=Path, default=Path("generated/output_slab.txt"))
+    parser.add_argument("--output", type=Path, help="Override the generated slab path")
     parser.add_argument("--model", default=os.environ.get("OLLAMA_MODEL", DEFAULT_MODEL))
     parser.add_argument("--ollama-url", default=os.environ.get("OLLAMA_URL", DEFAULT_OLLAMA_URL))
     parser.add_argument("--timeout", type=float, default=120.0, help="Ollama request timeout in seconds")
@@ -249,24 +253,29 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         library = load_smart_library(args.assets)
-        print(f"Asking Ollama ({args.model}) for an asset recipe...")
-        recipe = validate_recipe(
-            request_recipe(
+        if args.blueprint:
+            plan = json.loads(args.blueprint.read_text(encoding="utf-8-sig"), object_pairs_hook=unique_object)
+            solved = compile_blueprint(library, plan)
+            width = plan["west_room_width"] + plan["east_room_width"]
+            length = plan["depth"]
+            output = args.output or Path("generated/blueprint_slab.txt")
+        else:
+            print(f"Asking Ollama ({args.model}) for an asset recipe...")
+            recipe = request_recipe(
                 args.prompt,
                 library,
                 model=args.model,
                 ollama_url=args.ollama_url,
                 timeout=args.timeout,
-            ),
-            library,
-        )
-        layout = build_room_layout(library, recipe)
-        solved = solve(library, layout)
+            )
+            solved = solve(library, build_room_layout(library, recipe))
+            width, length = recipe["width"], recipe["length"]
+            output = args.output or Path("generated/output_slab.txt")
         if not solved["placements"]:
             raise ValueError("The recipe produced no placements")
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        write_slab(solved["placements"], args.output)
-        slab_text = args.output.read_text(encoding="utf-8").strip()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        write_slab(solved["placements"], output)
+        slab_text = output.read_text(encoding="utf-8").strip()
     except HTTPError as exc:
         print(f"Ollama returned HTTP {exc.code}: {exc.reason}", file=sys.stderr)
         return 1
@@ -277,8 +286,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Build failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Generated {len(solved['placements'])} placements for {recipe['width']}x{recipe['length']}.")
-    print(f"Saved TaleSpire slab to {args.output}")
+    print(f"Generated {len(solved['placements'])} placements for {width}x{length}.")
+    print(f"Saved TaleSpire slab to {output}")
     if not args.no_clipboard:
         warning = copy_slab_to_clipboard(slab_text)
         if warning:

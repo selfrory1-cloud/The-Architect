@@ -9,9 +9,8 @@ Python owns port-snapping, collision checks, rotation, and height calculations.
 The LLM must not supply raw placement coordinates. Structural assets must not
 be globally reclassified as props to hide placement errors.
 
-The first milestone is a verified local, single-room pipeline. A web interface,
-multi-room layouts, stairs, and multi-level generation come after that baseline
-works inside TaleSpire.
+The local single-room baseline is confirmed in TaleSpire. The first multi-room
+blueprint uses the same starter kit, with in-game junction verification pending.
 
 ## Current status
 
@@ -24,14 +23,14 @@ recipes, bounded dimensions, configurable local model/URL, and explicit errors.
 The starter library contains four calibrated assets. The separate master catalog
 has 2,431 UUIDs, including 445 entries hidden by duplicate Python dictionary
 keys; the lossless import/audit tool is available below. A large calibrated,
-theme-agnostic asset library, actual port-to-port assembly, web interface, and multi-room generation remain
-future work.
+theme-agnostic asset library, general multi-room generation, and a web interface
+remain future work.
 
 Door placement uses the floor asset's explicit `surface_offset` rather than
 placing a door at the floor tile's base Y. The starter value is `0.5`, consistent
 with the supplied room reference slab's half-unit floor-to-wall elevation.
-Verify that corrected door elevation in TaleSpire before treating that offset as
-confirmed for other floor assets.
+That door elevation was confirmed in TaleSpire for this floor and door pair;
+other assets still require their own calibration.
 
 Python 3.10+ is required. Install runtime dependencies in a virtual environment:
 
@@ -54,6 +53,32 @@ choose another local Ollama model; the endpoint can be configured with
 `OLLAMA_URL` or `--ollama-url`. The previous 5x5 tavern prompt is used when
 `--prompt` is omitted. Generated slabs are saved under `generated/` and copied
 to the clipboard when available. Run with `--no-clipboard` to only save.
+
+### Compile the measured two-room tavern
+
+From the project directory on Windows, run:
+
+```cmd
+.venv\Scripts\python.exe builder.py --blueprint blueprints\two_room_tavern.json
+```
+
+This mode needs no Ollama or model changes. It saves `generated/blueprint_slab.txt`
+separately from prompt-generated slabs and copies the new slab to the clipboard
+when available. On macOS/Linux, use `python builder.py --blueprint blueprints/two_room_tavern.json`
+with the virtual environment active.
+
+The JSON describes two rectangles sharing one north-south divider. One square
+is 5 tabletop feet, and rows count from zero at the south edge. The 16 x 8
+example uses row 4 for the west door and open interior passage (one half-square
+north of exact center). The north door has three full squares between its east
+edge and Room B's east boundary. The plan uses one layer of the nominal
+two-unit wall kit, no ceiling or furnishings, and no clipped corners or windows.
+The images are style references, not inputs to this command.
+
+The compiler snaps base tiles using their footprint sockets. That checks cell
+alignment, not the in-game wall meshes. In TaleSpire, check that the divider
+meets the outer walls at both ends, that its open passage is clear, and that
+the rotated exterior doors line up with their surrounding walls.
 
 Audit/import the master catalog:
 
@@ -85,12 +110,11 @@ Passing schema checks does not prove calibration is physically correct.
 
 ## Next milestones
 
-1. Run the new CLI locally with your working Ollama setup and paste its output
-   into TaleSpire. Keep a known-good slab as a regression fixture.
-2. Verify the corrected door height in TaleSpire, then calibrate asset metadata
-   from known-good builds and resolve the conflicting archive measurements.
-3. Implement port-to-port placement and geometric/collision checks, then support
-   multi-room recipes and multiple levels.
+1. Verify the two-room slab in TaleSpire, especially the divider junctions.
+2. Calibrate more assets from known-good builds and resolve conflicting archive
+   measurements.
+3. Extend the blueprint format to other shapes and add geometric checks,
+   stairs, and multiple levels.
 4. Put the stable generation engine behind a web API and build the user-facing
    platform on top of it.
 
