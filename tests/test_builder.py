@@ -41,6 +41,10 @@ class BuilderTests(unittest.TestCase):
             sum(item["asset"] == "shugun_smallDoor_01" for item in solved["placements"]),
             1,
         )
+        door = next(item for item in solved["placements"] if item["id"] == "door_S_2_0")
+        door_floor = next(item for item in solved["placements"] if item["id"] == "door_floor_2_0")
+        self.assertEqual(door["y"], 0.5)
+        self.assertEqual(door_floor["y"], 0.0)
         self.assertTrue(all(item["kind"] == "tile" for item in solved["placements"]))
 
     def test_recipe_rejects_coordinate_fields_and_unknown_assets(self):
@@ -53,6 +57,17 @@ class BuilderTests(unittest.TestCase):
         for width in (True, 2, 21, 5.0):
             with self.subTest(width=width), self.assertRaisesRegex(ValueError, "width"):
                 validate_recipe({**self.recipe, "width": width}, self.assets)
+
+    def test_door_requires_calibrated_floor_surface_offset(self):
+        for value in (None, float("nan"), -0.5):
+            with self.subTest(surface_offset=value):
+                assets = json.loads(json.dumps(self.assets))
+                if value is None:
+                    del assets["Tavern_Floor_01_01"]["surface_offset"]
+                else:
+                    assets["Tavern_Floor_01_01"]["surface_offset"] = value
+                with self.assertRaisesRegex(ValueError, "surface_offset"):
+                    validate_recipe(self.recipe, assets)
 
     def test_system_prompt_gives_asset_names_not_coordinates(self):
         prompt = system_prompt_for(self.assets)
@@ -112,6 +127,11 @@ class BuilderTests(unittest.TestCase):
                 sum(group["instance_count"] for group in decoded.data["layouts"]),
                 26,
             )
+            door_group = next(
+                group for group in decoded.data["layouts"]
+                if group["uuid"] == self.assets["shugun_smallDoor_01"]["uuid"]
+            )
+            self.assertEqual(door_group["instances"][0]["pos_y"], 0.5)
 
     def test_cli_writes_a_slab_using_a_mock_ollama_response(self):
         response_data = {"response": json.dumps(self.recipe)}

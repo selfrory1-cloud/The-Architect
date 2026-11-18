@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -104,6 +105,17 @@ def validate_recipe(
             continue
         if not isinstance(asset, str) or asset not in library:
             raise ValueError(f"{field} must name an asset in the configured library")
+    if recipe.get("door_asset") is not None:
+        surface_offset = library[recipe["floor_asset"]].get("surface_offset")
+        if (
+            type(surface_offset) not in (int, float)
+            or not math.isfinite(surface_offset)
+            or surface_offset < 0
+        ):
+            raise ValueError(
+                f"{recipe['floor_asset']} needs a calibrated nonnegative surface_offset "
+                "to place a door on top of its floor tile"
+            )
     return recipe
 
 
@@ -176,6 +188,7 @@ def build_room_layout(
                             "id": f"door_S_{x}_{z}",
                             "asset": door_asset,
                             "x": x,
+                            "y": assets[floor_asset]["surface_offset"],
                             "z": z,
                             "desired_front": "E",
                         },

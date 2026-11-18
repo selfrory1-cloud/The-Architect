@@ -27,6 +27,12 @@ keys; the lossless import/audit tool is available below. A large calibrated,
 theme-agnostic asset library, actual port-to-port assembly, web interface, and multi-room generation remain
 future work.
 
+Door placement uses the floor asset's explicit `surface_offset` rather than
+placing a door at the floor tile's base Y. The starter value is `0.5`, consistent
+with the supplied room reference slab's half-unit floor-to-wall elevation.
+Verify that corrected door elevation in TaleSpire before treating that offset as
+confirmed for other floor assets.
+
 Python 3.10+ is required. Install runtime dependencies in a virtual environment:
 
 ```sh
@@ -81,9 +87,8 @@ Passing schema checks does not prove calibration is physically correct.
 
 1. Run the new CLI locally with your working Ollama setup and paste its output
    into TaleSpire. Keep a known-good slab as a regression fixture.
-2. Expand and validate asset metadata from known-good builds; resolve the five
-   conflicting aliases reported by the active/archive comparison rather than
-   guessing which measurement is right.
+2. Verify the corrected door height in TaleSpire, then calibrate asset metadata
+   from known-good builds and resolve the conflicting archive measurements.
 3. Implement port-to-port placement and geometric/collision checks, then support
    multi-room recipes and multiple levels.
 4. Put the stable generation engine behind a web API and build the user-facing

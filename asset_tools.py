@@ -16,7 +16,9 @@ from uuid import UUID
 
 CARDINALS = {"N", "E", "S", "W"}
 FRONTS = CARDINALS | {"NE", "SE", "SW", "NW"}
-CALIBRATION_FIELDS = ("kind", "size", "height", "front", "ports", "base_yaw")
+CALIBRATION_FIELDS = (
+    "kind", "size", "height", "surface_offset", "front", "ports", "base_yaw"
+)
 
 
 def validate_uuid(value: object, context: str) -> None:
@@ -113,6 +115,10 @@ def validate_calibration(name: str, spec: dict) -> list[str]:
         errors.append("size must contain two positive finite numbers")
     if not is_number(spec.get("height"), positive=True):
         errors.append("height must be a positive finite number")
+    if "surface_offset" in spec and not is_number(spec["surface_offset"]):
+        errors.append("surface_offset must be a finite nonnegative number")
+    elif "surface_offset" in spec and spec["surface_offset"] < 0:
+        errors.append("surface_offset must be a finite nonnegative number")
     if not isinstance(spec.get("front"), str) or spec["front"] not in FRONTS:
         errors.append("front must be a compass direction")
     if not is_number(spec.get("base_yaw", 0)):

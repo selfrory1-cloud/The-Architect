@@ -4,6 +4,7 @@
     "uuid": "cf6063bb-5c6e-4107-b3e9-9c0c5ac75768",
     "size": [1, 1],
     "height": 2.0,
+    "surface_offset": 0.5,
     "front": "S",
     "ports": [
       {"side": "N", "x": 0.5, "z": 1},
