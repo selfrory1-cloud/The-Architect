@@ -69,16 +69,24 @@ with the virtual environment active.
 
 The JSON describes two rectangles sharing one north-south divider. One square
 is 5 tabletop feet, and rows count from zero at the south edge. The 16 x 8
-example uses row 4 for the west door and open interior passage (one half-square
+example uses row 4 for the west door and interior doorway (one half-square
 north of exact center). The north door has three full squares between its east
 edge and Room B's east boundary. The plan uses one layer of the nominal
 two-unit wall kit, no ceiling or furnishings, and no clipped corners or windows.
 The images are style references, not inputs to this command.
 
 The compiler snaps base tiles using their footprint sockets. That checks cell
-alignment, not the in-game wall meshes. In TaleSpire, check that the divider
-meets the outer walls at both ends, that its open passage is clear, and that
-the rotated exterior doors line up with their surrounding walls.
+alignment, not the in-game wall meshes. Divider ends use corner pieces with the
+rotations measured from the supplied corrected TaleSpire slab. Door
+`mount_offsets` in `assets.json` map `desired_front` to an X/Z correction from
+the supporting cell origin: the north-wall door (`W`) needs +0.5 Z, while
+the west (`S`) and interior (`N`) doors need no correction. These measurements
+are specific to this door and kit, not generic offsets for all assets.
+
+The example sets `interior_door` to `true` to reproduce the corrected build.
+Set it to `false` or omit it to retain an open passage. The regression fixture
+`tests/fixtures/corrected_two_room_tavern.txt` preserves the user-corrected slab;
+the export test compares every UUID, position, rotation, and instance count.
 
 Audit/import the master catalog:
 

@@ -4,5 +4,6 @@
   "depth": 8,
   "west_door_row": 4,
   "interior_opening_row": 4,
-  "north_door_clearance_from_east": 3
+  "north_door_clearance_from_east": 3,
+  "interior_door": true
 }

@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 import tempfile
 import unittest
@@ -26,21 +27,22 @@ class BlueprintTests(unittest.TestCase):
         self.assets = load_smart_library(ROOT / "assets.json")
         self.plan = json.loads(BLUEPRINT.read_text(encoding="utf-8"))
 
-    def test_tavern_has_one_divider_with_an_open_passage_and_two_exterior_doors(self):
+    def test_tavern_has_one_divider_with_corner_junctions_and_three_doors(self):
         solved = compile_blueprint(self.assets, self.plan)
         base = {
             (piece["x"], piece["z"]): piece["asset"]
             for piece in solved["placements"] if piece["y"] == 0
         }
-        self.assertEqual(len(solved["placements"]), 130)
+        self.assertEqual(len(solved["placements"]), 131)
         self.assertEqual(set(base), {(x, z) for x in range(16) for z in range(8)})
-        self.assertEqual([base[8, z] for z in range(8)], [WALL] * 4 + [FLOOR] + [WALL] * 3)
+        self.assertEqual([base[8, z] for z in range(8)],
+                         [CORNER] + [WALL] * 3 + [FLOOR] + [WALL] * 2 + [CORNER])
         self.assertEqual([base[7, z] for z in range(1, 7)], [FLOOR] * 6)
         self.assertEqual({cell for cell, asset in base.items() if asset == CORNER},
-                         {(0, 0), (0, 7), (15, 0), (15, 7)})
+                         {(0, 0), (0, 7), (15, 0), (15, 7), (8, 0), (8, 7)})
         self.assertEqual(solved["links_checked"], 232)
 
-    def test_blueprint_cli_exports_both_doors_without_ollama(self):
+    def test_blueprint_cli_matches_every_corrected_slab_instance_without_ollama(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "tavern.txt"
             with patch("builder.request_recipe") as request_recipe:
@@ -52,14 +54,34 @@ class BlueprintTests(unittest.TestCase):
             self.assertEqual(status, 0)
             slab = TSSlab()
             slab.decode_slab(output.read_text(encoding="utf-8"))
-        door_group = next(
-            group for group in slab.data["layouts"] if group["uuid"] == self.assets[DOOR]["uuid"]
+        reference = TSSlab()
+        reference.decode_slab(
+            (ROOT / "tests" / "fixtures" / "corrected_two_room_tavern.txt")
+            .read_text(encoding="utf-8").strip().strip("`").strip()
         )
-        self.assertCountEqual(
-            door_group["instances"],
-            [{"pos_x": 0.0, "pos_y": 0.5, "pos_z": 4.0, "degrees": 0.0},
-             {"pos_x": 12.0, "pos_y": 0.5, "pos_z": 7.0, "degrees": 90.0}],
-        )
+
+        def instances(data):
+            return Counter(
+                (group["uuid"], item["pos_x"], item["pos_y"], item["pos_z"], item["degrees"])
+                for group in data["layouts"] for item in group["instances"]
+            )
+
+        self.assertEqual(instances(slab.data), instances(reference.data))
+
+    def test_interior_door_can_remain_an_open_passage(self):
+        for value in (False, None):
+            plan = dict(self.plan)
+            if value is None:
+                del plan["interior_door"]
+            else:
+                plan["interior_door"] = value
+            solved = compile_blueprint(self.assets, plan)
+            self.assertEqual(sum(piece["asset"] == DOOR for piece in solved["placements"]), 2)
+
+    def test_rejects_missing_door_origin_calibration(self):
+        del self.assets[DOOR]["mount_offsets"]["W"]
+        with self.assertRaisesRegex(ValueError, "mount_offsets"):
+            compile_blueprint(self.assets, self.plan)
 
     def test_rejects_corner_door_and_a_misaligned_socket(self):
         with self.assertRaisesRegex(ValueError, "North door"):

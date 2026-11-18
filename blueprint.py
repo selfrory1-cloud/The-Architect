@@ -17,9 +17,11 @@ FIELDS = {
 
 
 def compile_blueprint(assets: dict, plan: dict) -> dict:
-    if not isinstance(plan, dict) or set(plan) != FIELDS:
-        raise ValueError(f"Blueprint must contain exactly: {', '.join(sorted(FIELDS))}")
-    if any(type(value) is not int for value in plan.values()):
+    if not isinstance(plan, dict) or set(plan) - {"interior_door"} != FIELDS:
+        raise ValueError(f"Blueprint requires {', '.join(sorted(FIELDS))}; optional: interior_door")
+    if type(plan.get("interior_door", False)) is not bool:
+        raise ValueError("interior_door must be a boolean")
+    if any(type(plan[field]) is not int for field in FIELDS):
         raise ValueError("Blueprint measurements must be integer grid squares")
     west = plan["west_room_width"]
     east = plan["east_room_width"]
@@ -52,8 +54,22 @@ def compile_blueprint(assets: dict, plan: dict) -> dict:
 
     width = west + east
     corners = {(0, 0): "S", (0, depth - 1): "W",
-               (width - 1, 0): "E", (width - 1, depth - 1): "N"}
+               (width - 1, 0): "E", (width - 1, depth - 1): "N",
+               (west, 0): "S", (west, depth - 1): "W"}
     doors = {(0, west_row): "S", (width - 1 - clearance, depth - 1): "W"}
+    if plan.get("interior_door", False):
+        doors[west, opening_row] = "N"
+    offsets = assets[DOOR].get("mount_offsets")
+    if not isinstance(offsets, dict):
+        raise ValueError(f"{DOOR} needs calibrated mount_offsets for blueprint doors")
+    for front in doors.values():
+        offset = offsets.get(front)
+        if (
+            not isinstance(offset, list)
+            or len(offset) != 2
+            or not all(is_number(value) for value in offset)
+        ):
+            raise ValueError(f"{DOOR}: mount_offsets[{front}] must contain finite x/z offsets")
 
     def base_piece(cell: tuple[int, int]) -> dict:
         x, z = cell
@@ -113,7 +129,8 @@ def compile_blueprint(assets: dict, plan: dict) -> dict:
     ]
     door_pieces = [
         {"id": f"door_{x}_{z}", "asset": DOOR, "desired_front": front,
-         "x": placements[x, z]["x"], "z": placements[x, z]["z"], "y": surface}
+         "x": placements[x, z]["x"] + offsets[front][0],
+         "z": placements[x, z]["z"] + offsets[front][1], "y": surface}
         for (x, z), front in doors.items()
     ]
     return solve(assets, {"placements": [*placements.values(), *door_pieces], "links": links})
