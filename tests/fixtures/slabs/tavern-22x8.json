@@ -1,0 +1,20 @@
+{
+  "source": "User-supplied rectangular Tavern slab. Decoded placements match the 22x8 settings shown in the accompanying screenshot.",
+  "form": {
+    "theme": "tavern",
+    "floors": 1,
+    "rooms_per_floor": 1,
+    "room_width": 22,
+    "room_depth": 8,
+    "furnish": false,
+    "roof": false,
+    "seed": 0
+  },
+  "excluded_reference_uuids": [],
+  "expected_counts": {
+    "floor": 154,
+    "door": 1,
+    "wall": 30
+  },
+  "slab": "H4sIAAAAAAAACjXUv2sTYRzH8bs+aXsHwjlcEOwzhGc6xF9I9kYHQbCjVcQhYhSH4ODSjIdk0emmFkShoH9AwEUwuHpT1cFBcOh44iRkULuYz33fyfKil8v3m34+z+Xo39HXtagTRdHe6Wu3nu5euLGfPv948vfX663lte+/r4z29t/vvDg4s5Wf+7Yb69r27NnJ2e3rb/5cutzbeXjfLa99eDD8/OTe5tV3P1+duvvp9uOXy2uT9Sg6vhi5wYaZbJpf8FESRcNQduRx1xymZUfv65WgPh8xb/Xq+VJfpZ1TYxWbd9bMnjMbnHXM1Ywaq9jU59rZ3KH7V6/DzPb1XBk37ftlrO+7uvewiNzN9v6y00/sb/0fcowJvt0wB/hj3Zxgjv02H5sjx5ig5sgBao6cYI6a0/M2R44xQc2RA9QcOcEc+21P9Ne1OTJBzZED1Bw5wRzbfDLyycgnI5+MfDLyycgnI5+MfDLyScknJZ+UfFLyScknJZ+UfFLyScnHkY8jH0c+jnwc+TjyceTjyMfZ+VJvnCE3whrPx2aFC9S5k3PUmZJTbFDna7VHao++/whr1B5Z4QK1R85Re+QUG9QeOUM7/7ZH1qg9ssIFao+co/bIKTaoPXKG7fPctT2yRu2RFS6wfc67tke2z3vX9sgGtUfO0H4/6MfTj6cfTz+efjz9ePrx9OPpx9OPpx9PP55+Av0E+gn0E+gn0E+gn0A/gX4C/QT6CfQT6CfQT0E/Bf0U9FPQT0E/Bf0U9FPQT0E/Bf3we2bn+T/r2OaVJAYAAA=="
+}

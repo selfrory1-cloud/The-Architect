@@ -51,8 +51,10 @@ REF_HAND_ADJUSTED_8X8 = (
     "SwbmQ4wQ+hcDhDaC0gxgexvAvgLqB9NA8xiNoO7/BaW7oO44BPUHAwMAtSMI2lABAAA="
 )
 
-def test_api_tavern_matches_in_game_room_without_placeholder_floor_or_door():
-    path = Path(__file__).with_name("fixtures") / "slabs" / "tavern-8x8.json"
+
+@pytest.mark.parametrize("fixture_name", ["tavern-8x8", "tavern-22x8"])
+def test_api_tavern_matches_reference_room(fixture_name):
+    path = Path(__file__).with_name("fixtures") / "slabs" / f"{fixture_name}.json"
     reference = json.loads(path.read_text(encoding="utf-8"))
     response = app.test_client().post("/api/generate", json=reference["form"])
     assert response.status_code == 200
