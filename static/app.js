@@ -167,6 +167,7 @@ async function loadCatalog(reset = false) {
     const row = document.createElement("tr");
     for (const value of [
       asset.name,
+      asset.key,
       asset.category,
       asset.uuid,
       asset.calibrated ? "Placement ready" : "Catalog only",
