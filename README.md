@@ -39,7 +39,11 @@ Only `Tavern_Wall_01` has a real UUID. Every other asset has a placeholder UUID 
 2. Paste the slab into the **Slab decoder** on the site to read its UUID.
 3. Update the entry in `assets.json`: `uuid`, `size`, `height`, `ports`, and set `"calibrated": true`.
 
-If in-game tests show rotations turning the wrong way, flip `ROTATION_CLOCKWISE` in `architect/builder.py`.
+The clockwise rotation direction is confirmed: a 90-degree clockwise turn advances rotation by 6 modulo 24.
+The supplied three-wall reference also establishes `Tavern_Wall_01`'s connection ports at local
+`W=(-0.5, 0)` and `E=(1.5, 0)`, rather than the assumed `(0, 0.25)` and `(2, 0.25)`.
+This calibrates straight and corner connections for that wall, not other assets or the preview's
+rectangular footprint. Placeholder assets can appear as missing-asset markers in TaleSpire.
 
 ## Tests
 ```bash

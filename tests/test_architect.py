@@ -4,7 +4,7 @@ import pytest
 
 from app import app
 from architect import slab
-from architect.builder import Library, build, rotate, snap
+from architect.builder import Library, Placement, build, rotate, snap
 from architect.query import RecipeError, apply_llm_theming, build_recipe
 
 LIB = Library.load()
@@ -35,6 +35,22 @@ def test_snap_aligns_port_under_rotation():
         assert p.port_world("W") == pytest.approx((5.0, 7.0))
         assert math.dist(p.port_world("W"), p.port_world("E")) == pytest.approx(2.0)
     assert rotate(0, 1, 1) == (1, 0)  # north turns east (clockwise)
+
+
+def test_wall_snapping_reproduces_talespire_corner_reference():
+    reference = slab.decode(
+        "H4sIAAAAAAAACjv369xFJgZGBgaGcgGn0KIwXc9pnJ37fv98PZcZKGYExAmcDAy/"
+        "oDQENLAwMAAAZfi1RzgAAAA="
+    )
+    first, second, corner = reference
+    wall = LIB.get("Tavern_Wall_01")
+    assert {a.uuid for a in reference} == {wall.uuid}
+    placed_corner = Placement(wall, corner.x, corner.y, corner.z, corner.rot // 6)
+    placed_first = snap(wall, "W", placed_corner.port_world("E"), first.y, first.rot // 6)
+    placed_second = snap(wall, "W", placed_first.port_world("E"), second.y, second.rot // 6)
+    for placed, observed in ((placed_first, first), (placed_second, second)):
+        assert (placed.x, placed.y, placed.z) == pytest.approx((observed.x, observed.y, observed.z))
+        assert placed.rot == observed.rot
 
 
 def test_single_room_perimeter_is_closed_with_one_door():
