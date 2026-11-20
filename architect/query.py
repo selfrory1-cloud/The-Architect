@@ -133,7 +133,7 @@ def validate_recipe(recipe: dict, lib: Library) -> None:
         if not isinstance(v, int) or not lo <= v <= hi:
             errors.append(f"{key} must be between {lo} and {hi}")
         elif v % 2:
-            errors.append(f"{key} must be even (walls and floor tiles are 2 units wide)")
+            errors.append(f"{key} must be even to fit the 2-unit wall runs")
     if len(floors) > 1:
         if isinstance(recipe.get("room_depth"), int) and recipe["room_depth"] < 8:
             errors.append("multi-floor builds need room_depth >= 8 to fit a stairwell and landing")

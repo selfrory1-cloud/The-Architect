@@ -27,16 +27,18 @@ How a build is assembled:
 1. Each room is compiled as a local **zone prefab**: floor tiles grow by snapping S→N / W→E ports. Walls sit
    *inside* the room footprint: the S and N rows run the full width, and the E and W columns fill the gap between
    them. Each run snaps every wall's `W` port to the previous `E` port and must end exactly at its corner, or the
-   build fails. Odd-length columns use the theme's 1-unit `wall_filler`. Doors replace a full wall segment and
-   must span the same distance. Props snap their `BASE` port to a floor tile's `TOP` port and never overlap walls.
+   build fails. Odd-length columns use the theme's 1-unit `wall_filler`. A door replaces a full wall segment,
+   using a filler beside it if needed. Props snap their `BASE` port to a floor tile's `TOP` port and never overlap walls.
 2. Zones snap together through zone ports (W↔E, S↔N). Shared walls are placed once, with an interior door.
 3. Levels stack at `level × wall height` (from `assets.json`). Room 1 of each level gets a stairwell
    (alternating columns) and the level above gets a matching floor opening. Rooms with nothing above get a flat roof.
 4. All zones are merged and encoded into one slab.
 
 ## Calibrating assets
-Only `Tavern_Wall_01` has a real UUID. Every other asset has a placeholder UUID and `"calibrated": false`
-(the site warns about these; they won't appear in TaleSpire). To calibrate:
+Tavern, House, and Shop use real floor, door, wall, and filler assets. Their 1×1 floor tiles start half a
+tile inside the south and north rows, and the 1-unit door and filler together replace a 2-unit wall.
+Roofs, stairs, and furnishings are still placeholders. To generate a single-floor room without those
+markers, uncheck **Furnish rooms** and **Flat roof**. To calibrate more assets:
 1. In TaleSpire, place the asset alone, select and copy it.
 2. Paste the slab into the **Slab decoder** on the site to read its UUID.
 3. Update the entry in `assets.json`: `uuid`, `size`, `height`, `ports`, and set `"calibrated": true`.
@@ -52,7 +54,7 @@ Geometry, verified against in-game reference slabs:
   which gives a small hidden T-junction overlap.
 
 The dedicated corner piece (`ce1e617e-f031-4011-b64e-ba262082b20f`) is not used yet. Room dimensions must be
-even because the floor uses 2×2 tiles. Placeholder assets appear as missing-asset markers in TaleSpire.
+even to fit the 2-unit wall runs. Placeholder assets can appear as missing-asset markers in TaleSpire.
 
 ## Tests
 ```bash

@@ -47,6 +47,29 @@ REF_HAND_ADJUSTED_8X8 = (
     "BKFB8h+4IPIg+guUBusTh+oTh+oTh6pXhqpXhqpXhpgH0gc2VxzKB4oHMYPsaWAB0R+4IHSBOJSv3MDCAHZfA2MXUP0F"
     "SwbmQ4wQ+hcDhDaC0gxgexvAvgLqB9NA8xiNoO7/BaW7oO44BPUHAwMAtSMI2lABAAA="
 )
+REF_WITH_FLOOR_AND_DOOR_8X8 = (
+    "H4sIAAAAAAAACmWQvUsDQRDFd7NBOVAuiEHQwB2pxKwfWNklWggWKY2HWJy4gpWFTdrDTqutYqMg+A8INoIidm4VsbBId60I"
+    "gpBCTePO7YsJuMU9Zt773cxu+6f9kmMj7O/UEqec/+/lCvbTLKxtHjXmN1reyUPv+/1i3PY6n8uq2bqtn55NzUzOvTaI7"
+    "VSvj3vT1fWrr8WlsL6/K2zvbi9+PtwZXb15Ox/bfto6WLE9acM1u8B9bqCPE6gD1BXGFHN+P9+FUp/y1CftQrN8"
+    "gHyAfIB8BfkK8lYjOyddYIKUzofV2EvypGnRaVxO8pq7nGFO2ZDS0UMPF5aSrLr0nYYi4SZzEk7/C4Xbw9b5LD"
+    "fLBN23r3HZaVhymhbh+/A9+MLtTVwELgIXgYvAReAicHR/4kiJIyWOlLjM9+F78IW7L3GkxLn74j2K8H34Hnzh"
+    "3o1qjbkaczXmaszVmKv5IE+8BCfBSXASnAQnwUk+mEucwb4G+xrsa7CvwZ4KeYW8Ql4hr5BXuI9i/Xf5BWnY9t1UAwAA"
+)
+
+
+def test_api_tavern_matches_in_game_room_without_placeholder_floor_or_door():
+    response = app.test_client().post("/api/generate", json={
+        "theme": "tavern", "room_width": 8, "room_depth": 8, "furnish": False, "roof": False,
+    })
+    assert response.status_code == 200
+    data = response.get_json()
+    expected = [a for a in slab.decode(REF_WITH_FLOOR_AND_DOOR_8X8)
+                if not a.uuid.startswith("00000000-0000-4000-8000-")]
+    assert data["stats"]["by_category"] == {"floor": 56, "door": 1, "wall": 16}
+    actual = slab.decode(data["slab"])
+    assert len(actual) == len(expected)
+    assert set(actual) == set(expected)
+    assert not data["warnings"]
 
 
 def _area(fp):
@@ -80,7 +103,8 @@ def test_single_room_walls_form_closed_ring_inside_floor(width, depth):
     segs = [p for p in res.placements if p.category in ("wall", "door")]
     _assert_closed_ring([p.footprint() for p in segs])
     floor = [p.footprint() for p in res.placements if p.category == "floor"]
-    assert (min(f[0] for f in floor), min(f[1] for f in floor)) == (0, 0)
+    assert (min(f[0] for f in floor), min(f[1] for f in floor)) == (0, 0.5)
+    assert (max(f[2] for f in floor), max(f[3] for f in floor)) == (width, depth - 0.5)
     for p in segs:
         assert (p.x * 2).is_integer() and (p.z * 2).is_integer()
         fx0, fz0, fx1, fz1 = p.footprint()
@@ -95,8 +119,8 @@ def test_single_room_walls_form_closed_ring_inside_floor(width, depth):
 
 def test_single_room_counts_use_filler_for_odd_columns():
     res = make(theme="tavern", floors=1, rooms_per_floor=1, room_width=6, room_depth=4, furnish=False, roof=False)
-    assert res.stats()["by_category"] == {"floor": 6, "wall": 9, "door": 1}
-    assert sum(p.asset.name == "Tavern_Wall_Filler_01" for p in res.placements) == 2
+    assert res.stats()["by_category"] == {"floor": 18, "wall": 10, "door": 1}
+    assert sum(p.asset.name == "Tavern_Wall_Filler_01" for p in res.placements) == 3
 
 
 def test_adjacent_rooms_share_a_wall_with_interior_door():
@@ -124,7 +148,7 @@ def test_multi_floor_stacks_on_wall_height_with_stairwell_and_hole():
     assert [s.y for s in stairs] == [0.0, 2.0]
     assert stairs[0].footprint() != stairs[1].footprint()  # alternate columns
     upper_floor = [p for p in res.placements if p.category == "floor" and p.y == 2.0]
-    assert len(upper_floor) == 12 - 2  # two tiles cut for the stairwell opening
+    assert len(upper_floor) == 6 * 7 - 8  # eight 1x1 tiles cut for the stairwell opening
     assert {p.y for p in res.placements if p.category == "roof"} == {6.0}
 
 

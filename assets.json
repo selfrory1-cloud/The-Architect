@@ -47,62 +47,63 @@
   },
   "Tavern_Door_01": {
     "kind": "tile",
-    "uuid": "00000000-0000-4000-8000-000000000001",
-    "calibrated": false,
+    "uuid": "6432f1d9-9677-4db8-8a97-171b142ad556",
+    "calibrated": true,
     "size": [
-      2,
-      0.5
+      0.5,
+      1
     ],
     "height": 2.0,
     "front": "S",
     "ports": [
       {
         "side": "W",
-        "x": 0,
-        "z": 0.25
+        "x": 0.25,
+        "z": 0
       },
       {
         "side": "E",
-        "x": 2,
-        "z": 0.25
+        "x": 0.25,
+        "z": 1
       }
     ]
   },
   "Tavern_Floor_01": {
     "kind": "tile",
-    "uuid": "00000000-0000-4000-8000-000000000002",
-    "calibrated": false,
+    "uuid": "cf6063bb-5c6e-4107-b3e9-9c0c5ac75768",
+    "calibrated": true,
+    "default_q": 2,
     "size": [
-      2,
-      2
+      1,
+      1
     ],
     "height": 0.25,
     "front": "S",
     "ports": [
       {
         "side": "N",
-        "x": 1,
-        "z": 2
+        "x": 0.5,
+        "z": 1
       },
       {
         "side": "S",
-        "x": 1,
+        "x": 0.5,
         "z": 0
       },
       {
         "side": "E",
-        "x": 2,
-        "z": 1
+        "x": 1,
+        "z": 0.5
       },
       {
         "side": "W",
         "x": 0,
-        "z": 1
+        "z": 0.5
       },
       {
         "side": "TOP",
-        "x": 1,
-        "z": 1
+        "x": 0.5,
+        "z": 0.5
       }
     ]
   },

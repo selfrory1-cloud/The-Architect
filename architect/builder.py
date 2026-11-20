@@ -51,6 +51,7 @@ class AssetDef:
     front: str
     ports: dict[str, tuple[float, float]]
     calibrated: bool = False
+    default_q: int = 0
 
     def port(self, side: str) -> tuple[float, float]:
         try:
@@ -78,6 +79,7 @@ class Library:
                 front=a.get("front", "S"),
                 ports={p["side"]: (float(p["x"]), float(p["z"])) for p in a.get("ports", [])},
                 calibrated=bool(a.get("calibrated", False)),
+                default_q=int(a.get("default_q", 0)),
             )
         themes = json.loads(Path(themes_path).read_text())
         lib = cls(assets, themes)
@@ -220,18 +222,21 @@ class Zone:
 
 
 def _grow_floor(lib_floor: AssetDef, spec: ZoneSpec, y: float, category: str,
-                hole: tuple[float, float, float, float] | None) -> list[Placement]:
+                hole: tuple[float, float, float, float] | None,
+                inset_z: float = 0.0) -> list[Placement]:
     """Grow a floor by snapping tiles port-to-port (S->N, W->E) from a seed tile."""
-    seed = Placement(lib_floor, 0.0, y, 0.0, 0, spec.name, category)
-    bounds = (0.0, 0.0, float(spec.width), float(spec.depth))
-    placed: dict[tuple[float, float], Placement] = {(0.0, 0.0): seed}
+    q = lib_floor.default_q
+    seed = Placement(lib_floor, 0.0, y, inset_z, q, spec.name, category)
+    bounds = (0.0, inset_z, float(spec.width), spec.depth - inset_z)
+    placed = {(seed.x, seed.z): seed}
     frontier = [seed]
     while frontier:
         tile = frontier.pop()
         for out_port, in_port in (("N", "S"), ("E", "W")):
-            nxt = snap(lib_floor, in_port, tile.port_world(out_port), y, 0, zone=spec.name, category=category)
+            target = tile.port_world(rotate_side(out_port, -q))
+            nxt = snap(lib_floor, rotate_side(in_port, -q), target, y, q, zone=spec.name, category=category)
             fx0, fz0, fx1, fz1 = nxt.footprint()
-            if fx0 < -_EPS or fz0 < -_EPS or fx1 > bounds[2] + _EPS or fz1 > bounds[3] + _EPS:
+            if fx0 < -_EPS or fz0 < bounds[1] - _EPS or fx1 > bounds[2] + _EPS or fz1 > bounds[3] + _EPS:
                 continue
             key = (nxt.x, nxt.z)
             if key not in placed:
@@ -278,16 +283,31 @@ def _wall_run(side: str, start: tuple[float, float], direction: tuple[float, flo
         raise BuildError(f"wall side {side} of '{spec.name}' did not reach its corner; check port calibration")
 
     if door is not None:
-        if abs(run_length(door) - run_length(wall)) > _EPS:
-            raise BuildError(f"door '{door.name}' must span one '{wall.name}' segment")
+        door_span, wall_span = run_length(door), run_length(wall)
+        fill_doorway = (filler is not None and door_span < wall_span
+                        and math.isclose(door_span + run_length(filler), wall_span, abs_tol=_EPS))
+        if not fill_doorway and not math.isclose(door_span, wall_span, abs_tol=_EPS):
+            raise BuildError(f"door '{door.name}' must span one '{wall.name}' segment, alone or with a filler")
         candidates = [i for i, p in enumerate(out) if p.asset is wall]
         mid = (len(out) - 1) / 2
         for i in sorted(candidates, key=lambda i: (abs(i - mid), i)):
-            d = snap(door, "W", out[i].port_world("W"), y, orient(door, direction),
+            segment = out[i]
+            d = snap(door, "W", segment.port_world("W"), y, orient(door, direction),
                      zone=spec.name, category="door")
-            if not any(_overlaps(_expand(d.footprint(), 1.5), k) for k in keep_clear):
-                out[i] = d
-                break
+            if any(_overlaps(_expand(d.footprint(), 1.5), k) for k in keep_clear):
+                continue
+            replacement = [d]
+            end_port = d.port_world("E")
+            if fill_doorway and filler is not None:
+                # The in-game doorway reference uses the filler in reverse.
+                f = snap(filler, "E", end_port, y, orient(filler, (-direction[0], -direction[1])),
+                         zone=spec.name, category="wall")
+                replacement.append(f)
+                end_port = f.port_world("W")
+            if math.dist(end_port, segment.port_world("E")) > _EPS:
+                raise BuildError(f"door '{door.name}' and filler do not reach the wall segment end")
+            out[i:i + 1] = replacement
+            break
         else:
             raise BuildError(f"no clear wall segment for a door on side {side} of '{spec.name}'")
     return out
@@ -348,21 +368,27 @@ def compile_zone(lib: Library, theme: dict, spec: ZoneSpec, wall_height: float,
     if spec.width % floor_asset.size[0] or spec.depth % floor_asset.size[1]:
         raise BuildError(f"room size must be a multiple of the floor tile size {floor_asset.size}")
 
-    placements = _grow_floor(floor_asset, spec, 0.0, "floor", spec.stair_hole)
+    floor_z = float(theme.get("floor_inset_z", 0.0))
+    placements = _grow_floor(floor_asset, spec, 0.0, "floor", spec.stair_hole, floor_z)
 
     stair_fp = None
     blocked: list[tuple[float, float, float, float]] = []
     if spec.stair_hole:
         blocked.append(spec.stair_hole)
+    entry_fp = None
     if spec.stairs_up:
         stairs = lib.get(theme["stairs"])
-        ex = spec.stair_col * floor_asset.size[0]
-        entry = next((t for t in placements if t.category == "floor" and abs(t.x - ex) < _EPS and abs(t.z) < _EPS), None)
-        if entry is None:
-            raise BuildError(f"no floor tile for the stairwell entry in '{spec.name}'")
-        st = snap(stairs, "S", entry.port_world("N"), 0.0, 0, zone=spec.name, category="stairs")
+        stair_width = stairs.size[0]
+        ex = spec.stair_col * stair_width
+        entry_depth = max(2.0, floor_asset.size[1])
+        entry_fp = (ex, floor_z, ex + stair_width, floor_z + entry_depth)
+        if (entry_fp[2] > spec.width or entry_fp[3] > spec.depth - floor_z
+                or (spec.stair_hole and _overlaps(entry_fp, spec.stair_hole))):
+            raise BuildError(f"no clear floor for the stairwell entry in '{spec.name}'")
+        st = snap(stairs, "S", (ex + stair_width / 2, entry_fp[3]), 0.0, 0,
+                  zone=spec.name, category="stairs")
         stair_fp = st.footprint()
-        if stair_fp[3] > spec.depth - floor_asset.size[1] + _EPS or stair_fp[2] > spec.width + _EPS:
+        if stair_fp[3] > spec.depth - floor_z - floor_asset.size[1] + _EPS or stair_fp[2] > spec.width + _EPS:
             raise BuildError("room is too small for a stairwell (needs a landing tile beyond the top step)")
         placements.append(st)
         blocked.append(stair_fp)
@@ -370,8 +396,8 @@ def compile_zone(lib: Library, theme: dict, spec: ZoneSpec, wall_height: float,
     walls = _build_walls(lib, theme, spec, 0.0, list(blocked))
     placements += walls
     blocked += [w.footprint() for w in walls]
-    if spec.stairs_up:
-        blocked.append(entry.footprint())
+    if entry_fp is not None:
+        blocked.append(entry_fp)
 
     if spec.props and prop_density > 0:
         doors = [p.center() for p in placements if p.category == "door"]
