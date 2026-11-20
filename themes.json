@@ -2,6 +2,7 @@
   "tavern": {
     "label": "Tavern",
     "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
     "door": "Tavern_Door_01",
     "floor": "Tavern_Floor_01",
     "stairs": "Tavern_Stairs_01",
@@ -54,6 +55,7 @@
   "house": {
     "label": "House",
     "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
     "door": "Tavern_Door_01",
     "floor": "Tavern_Floor_01",
     "stairs": "Tavern_Stairs_01",
@@ -95,6 +97,7 @@
   "shop": {
     "label": "Shop",
     "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
     "door": "Tavern_Door_01",
     "floor": "Tavern_Floor_01",
     "stairs": "Tavern_Stairs_01",

@@ -12,13 +12,36 @@
     "ports": [
       {
         "side": "W",
-        "x": -0.5,
+        "x": 0,
+        "z": 0.25
+      },
+      {
+        "side": "E",
+        "x": 2,
+        "z": 0.25
+      }
+    ]
+  },
+  "Tavern_Wall_Filler_01": {
+    "kind": "tile",
+    "uuid": "82b03fd9-1afb-463f-a3f8-2f30204d6561",
+    "calibrated": true,
+    "size": [
+      0.5,
+      1
+    ],
+    "height": 2.0,
+    "front": "S",
+    "ports": [
+      {
+        "side": "W",
+        "x": 0.25,
         "z": 0
       },
       {
         "side": "E",
-        "x": 1.5,
-        "z": 0
+        "x": 0.25,
+        "z": 1
       }
     ]
   },

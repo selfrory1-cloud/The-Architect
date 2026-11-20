@@ -38,31 +38,65 @@ def test_snap_aligns_port_under_rotation():
     assert rotate(0, 1, 1) == (1, 0)  # north turns east (clockwise)
 
 
-def test_wall_snapping_reproduces_talespire_corner_reference():
-    reference = slab.decode(
-        "H4sIAAAAAAAACjv369xFJgZGBgaGcgGn0KIwXc9pnJ37fv98PZcZKGYExAmcDAy/"
-        "oDQENLAwMAAAZfi1RzgAAAA="
-    )
-    first, second, corner = reference
-    wall = LIB.get("Tavern_Wall_01")
-    assert {a.uuid for a in reference} == {wall.uuid}
-    placed_corner = Placement(wall, corner.x, corner.y, corner.z, corner.rot // 6)
-    placed_first = snap(wall, "W", placed_corner.port_world("E"), first.y, first.rot // 6)
-    placed_second = snap(wall, "W", placed_first.port_world("E"), second.y, second.rot // 6)
-    for placed, observed in ((placed_first, first), (placed_second, second)):
-        assert (placed.x, placed.y, placed.z) == pytest.approx((observed.x, observed.y, observed.z))
-        assert placed.rot == observed.rot
+REF_CORNERS_WITH_FILLER = (
+    "H4sIAAAAAAAACjv369xFJgYmBgaGcgGn0KIwXc9pnJ37fv98PZcTKHbTfkPTbyl7t8U/9A0UfFMTWYBiXUDFCZwNLF8Y"
+    "GRgUZBiYdaB0CgOEBlIMC/gbGEHyIKADpVMYEECBuYERZM4DUYh5CsxQcZkGFgirAagLAKgNkKKcAAAA"
+)
+REF_HAND_ADJUSTED_8X8 = (
+    "H4sIAAAAAAAACjv369xFJgZmBjhwaIDQjIyYYkwCQKJcwCm0KEzXcxpn577fP1/PBYl9gShmTgESBQYMDDqMEPoLlN7D"
+    "BKFB8h+4IPIg+guUBusTh+oTh+oTh6pXhqpXhqpXhpgH0gc2VxzKB4oHMYPsaWAB0R+4IHSBOJSv3MDCAHZfA2MXUP0F"
+    "SwbmQ4wQ+hcDhDaC0gxgexvAvgLqB9NA8xiNoO7/BaW7oO44BPUHAwMAtSMI2lABAAA="
+)
 
 
-def test_single_room_perimeter_is_closed_with_one_door():
-    res = make(theme="tavern", floors=1, rooms_per_floor=1, room_width=6, room_depth=4, furnish=False, roof=False)
-    cats = res.stats()["by_category"]
-    assert cats == {"floor": 6, "wall": 9, "door": 1}
-    # Every wall segment's E port must coincide with another segment's W port (no gaps).
+def _area(fp):
+    return (fp[2] - fp[0]) * (fp[3] - fp[1])
+
+
+def _assert_closed_ring(fps):
+    """Footprints tile the rectangular ring around their bounding box with no gaps or overlaps."""
+    for i, a in enumerate(fps):
+        for b in fps[i + 1:]:
+            assert not (a[0] < b[2] - 1e-6 and b[0] < a[2] - 1e-6 and a[1] < b[3] - 1e-6 and b[1] < a[3] - 1e-6), (a, b)
+    x0, z0 = min(f[0] for f in fps), min(f[1] for f in fps)
+    x1, z1 = max(f[2] for f in fps), max(f[3] for f in fps)
+    t = 0.5
+    for f in fps:  # every piece hugs one edge of the bounding box
+        assert f[0] == x0 or f[2] == x1 or f[1] == z0 or f[3] == z1, f
+    assert sum(map(_area, fps)) == pytest.approx((x1 - x0) * (z1 - z0) - (x1 - x0 - 2 * t) * (z1 - z0 - 2 * t))
+
+
+@pytest.mark.parametrize("code", [REF_CORNERS_WITH_FILLER, REF_HAND_ADJUSTED_8X8])
+def test_slab_position_is_min_corner_of_rotated_footprint(code):
+    by_uuid = {a.uuid: a for a in LIB.assets.values()}
+    walls = [Placement(by_uuid[a.uuid], a.x, a.y, a.z, a.rot // 6) for a in slab.decode(code)
+             if a.uuid in by_uuid and by_uuid[a.uuid].name.startswith("Tavern_Wall")]
+    _assert_closed_ring([w.footprint() for w in walls])
+
+
+@pytest.mark.parametrize(("width", "depth"), [(8, 8), (6, 4), (6, 10), (10, 4)])
+def test_single_room_walls_form_closed_ring_inside_floor(width, depth):
+    res = make(room_width=width, room_depth=depth, furnish=False, roof=False)
     segs = [p for p in res.placements if p.category in ("wall", "door")]
-    w_ports = {tuple(round(v, 3) for v in p.port_world("W")) for p in segs}
+    _assert_closed_ring([p.footprint() for p in segs])
+    floor = [p.footprint() for p in res.placements if p.category == "floor"]
+    assert (min(f[0] for f in floor), min(f[1] for f in floor)) == (0, 0)
     for p in segs:
-        assert tuple(round(v, 3) for v in p.port_world("E")) in w_ports
+        assert (p.x * 2).is_integer() and (p.z * 2).is_integer()
+        fx0, fz0, fx1, fz1 = p.footprint()
+        assert fx0 >= 0 and fz0 >= 0 and fx1 <= width and fz1 <= depth
+    wall_rot = {"S": 0, "W": 6, "N": 12, "E": 18}
+    for p in segs:
+        if p.asset.name == "Tavern_Wall_01":
+            fx0, fz0, fx1, fz1 = p.footprint()
+            side = "S" if fz0 == 0 and fx1 - fx0 == 2 else "N" if fz1 == depth and fx1 - fx0 == 2 else "W" if fx0 == 0 else "E"
+            assert p.rot == wall_rot[side], (side, p)
+
+
+def test_single_room_counts_use_filler_for_odd_columns():
+    res = make(theme="tavern", floors=1, rooms_per_floor=1, room_width=6, room_depth=4, furnish=False, roof=False)
+    assert res.stats()["by_category"] == {"floor": 6, "wall": 9, "door": 1}
+    assert sum(p.asset.name == "Tavern_Wall_Filler_01" for p in res.placements) == 2
 
 
 def test_adjacent_rooms_share_a_wall_with_interior_door():
@@ -71,29 +105,6 @@ def test_adjacent_rooms_share_a_wall_with_interior_door():
     centers = [tuple(round(v, 3) for v in p.center()) for p in segs]
     assert len(centers) == len(set(centers)), "shared wall placed twice"
     assert res.stats()["by_category"]["door"] == 2  # entrance + interior
-
-
-@pytest.mark.parametrize(("width", "depth"), [(8, 8), (6, 10), (10, 4)])
-def test_wall_runs_match_each_floor_edge_after_door_replacement(width, depth):
-    res = make(room_width=width, room_depth=depth, furnish=False, roof=False)
-    segments = [p for p in res.placements if p.category in ("door", "wall")]
-    expected = {
-        2: (0, width, 0),
-        3: (0, depth, 0),
-        0: (0, width, depth),
-        1: (0, depth, width),
-    }
-    for q, (start, end, fixed) in expected.items():
-        along = q % 2
-        across = 1 - along
-        spans = []
-        for p in segments:
-            if p.q == q:
-                w, e = p.port_world("W"), p.port_world("E")
-                assert w[across] == e[across] == fixed
-                assert p.center()[across] == fixed
-                spans.append(tuple(sorted((w[along], e[along]))))
-        assert sorted(spans) == [(i, i + 2) for i in range(start, end, 2)]
 
 
 def test_wall_run_rejects_miscalibrated_door_even_if_loop_would_close():
@@ -123,9 +134,11 @@ def test_props_stay_inside_walls_and_do_not_overlap():
         ox, _, oz = z.offset
         props = [p.footprint() for p in z.placements if p.category == "prop"]
         assert props
+        walls = [p.footprint() for p in z.placements if p.category in ("wall", "door")]
         for i, (x0, z0, x1, z1) in enumerate(props):
-            assert x0 >= ox + 0.25 - 1e-6 and x1 <= ox + 8 - 0.25 + 1e-6
-            assert z0 >= oz + 0.25 - 1e-6 and z1 <= oz + 8 - 0.25 + 1e-6
+            assert x0 >= ox and x1 <= ox + 8 and z0 >= oz and z1 <= oz + 8
+            for w in walls:
+                assert not (x0 < w[2] and w[0] < x1 and z0 < w[3] and w[1] < z1)
             for o in props[i + 1:]:
                 assert not (x0 < o[2] and o[0] < x1 and z0 < o[3] and o[1] < z1)
 

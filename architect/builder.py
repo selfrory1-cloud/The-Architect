@@ -5,8 +5,12 @@ The builder never asks the LLM for coordinates. It ingests a validated JSON reci
 ports. Structural runs are assembled by aligning ports relative to each asset's pivot.
 
 Coordinate frame: x = east, z = north, y = up. One TaleSpire tile = 1 unit.
-Rotations are quarter turns ``q`` (0..3) about the asset's origin, clockwise when
-viewed from above.
+Rotations are quarter turns ``q`` (0..3), clockwise when viewed from above.
+
+Slab position model (verified against in-game reference slabs): the position TaleSpire
+stores for an asset is the minimum (south-west) corner of its *rotated* footprint, not a
+rotation pivot. Asset ``size`` and ``ports`` are given in the unrotated local footprint
+``[0, w] x [0, d]``; rotating an asset keeps its footprint on the grid.
 """
 from __future__ import annotations
 
@@ -82,7 +86,9 @@ class Library:
 
     def _check_themes(self) -> None:
         for tname, t in self.themes.items():
-            for slot in ("wall", "door", "floor", "stairs", "roof"):
+            for slot in ("wall", "door", "floor", "stairs", "roof", "wall_filler"):
+                if slot == "wall_filler" and not t.get(slot):
+                    continue
                 if t[slot] not in self.assets:
                     raise BuildError(f"theme '{tname}' references unknown {slot} asset '{t[slot]}'")
             for role, props in t.get("props", {}).items():
@@ -134,20 +140,14 @@ class Placement:
         return q * ROT_STEPS_PER_QUARTER
 
     def port_world(self, side: str) -> tuple[float, float]:
-        px, pz = rotate(*self.asset.port(side), self.q)
-        return self.x + px, self.z + pz
+        lx, lz = _local_port(self.asset, side, self.q)
+        return self.x + lx, self.z + lz
 
     def footprint(self) -> tuple[float, float, float, float]:
         w, d = self.asset.size
-        x0, z0 = (0.0, 0.0)
-        if self.category in ("wall", "door"):
-            x0, center_z = self.asset.port("W")
-            w = self.asset.port("E")[0] - x0
-            z0 = center_z - d / 2
-        pts = [rotate(cx, cz, self.q) for cx in (x0, x0 + w) for cz in (z0, z0 + d)]
-        xs = [self.x + p[0] for p in pts]
-        zs = [self.z + p[1] for p in pts]
-        return min(xs), min(zs), max(xs), max(zs)
+        if self.q % 2:
+            w, d = d, w
+        return self.x, self.z, self.x + w, self.z + d
 
     def center(self) -> tuple[float, float]:
         x0, z0, x1, z1 = self.footprint()
@@ -157,10 +157,34 @@ class Placement:
         return Placement(self.asset, self.x + dx, self.y + dy, self.z + dz, self.q, self.zone, self.category)
 
 
+def _local_port(asset: AssetDef, side: str, q: int) -> tuple[float, float]:
+    """Port offset from the rotated footprint's minimum corner (the slab position)."""
+    w, d = asset.size
+    corners = [rotate(cx, cz, q) for cx in (0.0, w) for cz in (0.0, d)]
+    mx, mz = min(c[0] for c in corners), min(c[1] for c in corners)
+    px, pz = rotate(*asset.port(side), q)
+    return px - mx, pz - mz
+
+
 def snap(asset: AssetDef, port: str, target: tuple[float, float], y: float, q: int, **kw) -> Placement:
     """Place ``asset`` (rotated by ``q``) so its ``port`` lands exactly on ``target``."""
-    px, pz = rotate(*asset.port(port), q)
-    return Placement(asset, round(target[0] - px, 4), y, round(target[1] - pz, 4), q, **kw)
+    lx, lz = _local_port(asset, port, q)
+    return Placement(asset, round(target[0] - lx, 4) + 0.0, y, round(target[1] - lz, 4) + 0.0, q, **kw)
+
+
+def run_length(asset: AssetDef) -> float:
+    (wx, wz), (ex, ez) = asset.port("W"), asset.port("E")
+    return math.hypot(ex - wx, ez - wz)
+
+
+def orient(asset: AssetDef, direction: tuple[float, float]) -> int:
+    """Quarter turns that make the asset's W->E port axis point along ``direction``."""
+    (wx, wz), (ex, ez) = asset.port("W"), asset.port("E")
+    n = run_length(asset)
+    for q in range(4):
+        if math.dist(rotate((ex - wx) / n, (ez - wz) / n, q), direction) < 1e-6:
+            return q
+    raise BuildError(f"asset '{asset.name}' W/E ports are not axis-aligned")
 
 
 def _overlaps(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> bool:
@@ -223,55 +247,98 @@ def _expand(fp: tuple[float, float, float, float], m: float) -> tuple[float, flo
     return fp[0] - m, fp[1] - m, fp[2] + m, fp[3] + m
 
 
-def _chain_walls(lib: Library, theme: dict, spec: ZoneSpec, y: float,
-                 keep_clear: list[tuple[float, float, float, float]]) -> list[Placement]:
-    """Walk the room perimeter clockwise, snapping each wall's W port to the previous E port.
+def _fill_pieces(length: float, wall: AssetDef, filler: AssetDef | None) -> list[AssetDef] | None:
+    """Pieces that exactly fill ``length``: full walls plus at most one filler."""
+    seg = run_length(wall)
+    n, rem = divmod(length + _EPS, seg)
+    rem -= _EPS
+    if abs(rem) < 1e-6:
+        return [wall] * int(n)
+    if filler is not None and abs(rem - run_length(filler)) < 1e-6:
+        return [filler] + [wall] * int(n)
+    return None
 
-    The chain starts at the south-east corner. Each side is a run of walls with a fixed
-    rotation chosen so the wall front faces into the room; turning a corner only changes
-    the rotation, the snap target is still the previous wall's E port. Doors go on the
-    segment closest to the middle of a side whose approach is not blocked (``keep_clear``).
+
+def _wall_run(side: str, start: tuple[float, float], direction: tuple[float, float], length: float,
+              wall: AssetDef, filler: AssetDef | None, door: AssetDef | None, y: float, spec: ZoneSpec,
+              keep_clear: list[tuple[float, float, float, float]]) -> list[Placement]:
+    """Snap a straight run W-port to E-port from ``start`` and verify it ends exactly at its corner."""
+    pieces = _fill_pieces(length, wall, filler)
+    if pieces is None:
+        raise BuildError(f"side {side} of '{spec.name}' ({length} units) cannot be filled with "
+                         f"'{wall.name}'{' or its filler' if filler else ''}")
+    out: list[Placement] = []
+    cursor = start
+    for asset in pieces:
+        p = snap(asset, "W", cursor, y, orient(asset, direction), zone=spec.name, category="wall")
+        cursor = p.port_world("E")
+        out.append(p)
+    end = (start[0] + direction[0] * length, start[1] + direction[1] * length)
+    if math.dist(cursor, end) > 1e-3:
+        raise BuildError(f"wall side {side} of '{spec.name}' did not reach its corner; check port calibration")
+
+    if door is not None:
+        if abs(run_length(door) - run_length(wall)) > _EPS:
+            raise BuildError(f"door '{door.name}' must span one '{wall.name}' segment")
+        candidates = [i for i, p in enumerate(out) if p.asset is wall]
+        mid = (len(out) - 1) / 2
+        for i in sorted(candidates, key=lambda i: (abs(i - mid), i)):
+            d = snap(door, "W", out[i].port_world("W"), y, orient(door, direction),
+                     zone=spec.name, category="door")
+            if not any(_overlaps(_expand(d.footprint(), 1.5), k) for k in keep_clear):
+                out[i] = d
+                break
+        else:
+            raise BuildError(f"no clear wall segment for a door on side {side} of '{spec.name}'")
+    return out
+
+
+def _column_extension(length: float, t: float, wall: AssetDef, filler: AssetDef | None) -> tuple[float, float]:
+    """How far a column must reach into the perpendicular rows (bottom, top) to be fillable.
+
+    Rows run the full room width; columns sit between them. If the gap is not fillable
+    with walls (+ filler), the column is extended by up to one wall thickness into a row,
+    which hides the overlap inside the junction.
+    """
+    for eb, et in ((0.0, 0.0), (t, 0.0), (0.0, t), (t, t)):
+        if _fill_pieces(length + eb + et, wall, filler) is not None:
+            return eb, et
+    raise BuildError(f"cannot fill a {length}-unit wall column with '{wall.name}'")
+
+
+def _build_walls(lib: Library, theme: dict, spec: ZoneSpec, y: float,
+                 keep_clear: list[tuple[float, float, float, float]]) -> list[Placement]:
+    """Assemble the room's walls inside its footprint ``[0, W] x [0, D]``.
+
+    Rows (S/N) run the full width; columns (E/W) fill the gap between rows, using the
+    theme's 1-unit filler when the gap is odd. Run directions follow the in-game
+    reference builds: S row west->east (rot 0), E column south->north (rot 18),
+    N row east->west (rot 12), W column north->south (rot 6). A room owns its N and E
+    walls; it owns S/W walls only when no neighbour shares that side.
     """
     wall = lib.get(theme["wall"])
+    filler = lib.get(theme["wall_filler"]) if theme.get("wall_filler") else None
     door = lib.get(theme["door"])
-    west, east = wall.port("W"), wall.port("E")
-    seg = east[0] - west[0]
-    if seg <= _EPS or not math.isclose(east[1], west[1], abs_tol=_EPS):
-        raise BuildError(f"wall '{wall.name}' must have straight W and E ports")
-    runs = (("S", 2, spec.width), ("W", 3, spec.depth), ("N", 0, spec.width), ("E", 1, spec.depth))
-    cursor = (float(spec.width), 0.0)
+    t = wall.size[1]
+    W, D = float(spec.width), float(spec.depth)
+    own_s, own_w = "S" not in spec.open_sides, "W" not in spec.open_sides
+    bottom = t if own_s else 0.0  # a south neighbour's N row occupies [-t, 0]
+    top = D - t
+    eb, et = _column_extension(top - bottom, t, wall, filler)
+    col_len = top - bottom + eb + et
+
+    runs = []
+    if own_s:
+        runs.append(("S", (0.0, t / 2), (1, 0), W))
+    runs.append(("E", (W - t / 2, bottom - eb), (0, 1), col_len))
+    runs.append(("N", (W, D - t / 2), (-1, 0), W))
+    if own_w:
+        runs.append(("W", (t / 2, top + et), (0, -1), col_len))
+
     out: list[Placement] = []
-    for side, q, length in runs:
-        count = int(round(length / seg))
-        if not math.isclose(count * seg, length, abs_tol=_EPS):
-            raise BuildError(f"wall '{wall.name}' cannot fill side {side} of '{spec.name}' exactly")
-        dx, dz = rotate(length, 0, q)
-        end = (cursor[0] + dx, cursor[1] + dz)
-        door_idx = -1
-        if side in spec.door_sides:
-            dw, de = door.port("W"), door.port("E")
-            if math.dist((de[0] - dw[0], de[1] - dw[1]), (seg, 0)) > _EPS:
-                raise BuildError(f"door '{door.name}' must span one '{wall.name}' segment")
-            probe, segs = cursor, []
-            for _ in range(count):
-                p = snap(door, "W", probe, y, q, category="door")
-                segs.append(p.footprint())
-                probe = p.port_world("E")
-            for i in sorted(range(count), key=lambda i: (abs(i - (count - 1) / 2), i)):
-                if not any(_overlaps(_expand(segs[i], 1.5), k) for k in keep_clear):
-                    door_idx = i
-                    break
-            if door_idx < 0:
-                raise BuildError(f"no clear wall segment for a door on side {side} of '{spec.name}'")
-        for i in range(count):
-            asset = door if i == door_idx else wall
-            p = snap(asset, "W", cursor, y, q, zone=spec.name, category="door" if i == door_idx else "wall")
-            cursor = p.port_world("E")
-            if side not in spec.open_sides:
-                out.append(p)
-        if math.dist(cursor, end) > 1e-3:
-            raise BuildError(f"wall side {side} of '{spec.name}' did not reach its corner; check port calibration")
-        cursor = end
+    for side, start, direction, length in runs:
+        out += _wall_run(side, start, direction, length, wall, filler,
+                         door if side in spec.door_sides else None, y, spec, keep_clear)
     return out
 
 
@@ -300,12 +367,13 @@ def compile_zone(lib: Library, theme: dict, spec: ZoneSpec, wall_height: float,
         placements.append(st)
         blocked.append(stair_fp)
 
-    placements += _chain_walls(lib, theme, spec, 0.0, list(blocked))
+    walls = _build_walls(lib, theme, spec, 0.0, list(blocked))
+    placements += walls
+    blocked += [w.footprint() for w in walls]
     if spec.stairs_up:
         blocked.append(entry.footprint())
 
     if spec.props and prop_density > 0:
-        wall_thickness = lib.get(theme["wall"]).size[1]
         doors = [p.center() for p in placements if p.category == "door"]
         for tile in [p for p in placements if p.category == "floor"]:
             fp = tile.footprint()
@@ -318,9 +386,8 @@ def compile_zone(lib: Library, theme: dict, spec: ZoneSpec, wall_height: float,
             cand = snap(prop, "BASE", tile.port_world("TOP"), 0.0, rng.randrange(4),
                         zone=spec.name, category="prop")
             pf = cand.footprint()
-            half = wall_thickness / 2
-            if (pf[0] < half - _EPS or pf[1] < half - _EPS or pf[2] > spec.width - half + _EPS
-                    or pf[3] > spec.depth - half + _EPS or any(_overlaps(pf, b) for b in blocked)):
+            if (pf[0] < -_EPS or pf[1] < -_EPS or pf[2] > spec.width + _EPS
+                    or pf[3] > spec.depth + _EPS or any(_overlaps(pf, b) for b in blocked)):
                 continue
             blocked.append(pf)
             placements.append(cand)
