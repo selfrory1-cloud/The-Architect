@@ -26,7 +26,8 @@ Environment options: `PORT`, `HOST`, `FLASK_DEBUG=1`, and for the optional LLM s
 How a build is assembled:
 1. Each room is compiled as a local **zone prefab**: floor tiles grow by snapping S→N / W→E ports; walls are
    chained around the perimeter, each wall's `W` port snapped to the previous wall's `E` port (the chain must
-   close or the build fails); doors replace a wall segment; props snap their `BASE` port to a floor tile's `TOP` port.
+   reach each of the four corners exactly or the build fails); doors must span the same distance as the
+   wall segment they replace; props snap their `BASE` port to a floor tile's `TOP` port.
 2. Zones snap together through zone ports (W↔E, S↔N). Shared walls are placed once, with an interior door.
 3. Levels stack at `level × wall height` (from `assets.json`). Room 1 of each level gets a stairwell
    (alternating columns) and the level above gets a matching floor opening. Rooms with nothing above get a flat roof.
@@ -42,8 +43,12 @@ Only `Tavern_Wall_01` has a real UUID. Every other asset has a placeholder UUID 
 The clockwise rotation direction is confirmed: a 90-degree clockwise turn advances rotation by 6 modulo 24.
 The supplied three-wall reference also establishes `Tavern_Wall_01`'s connection ports at local
 `W=(-0.5, 0)` and `E=(1.5, 0)`, rather than the assumed `(0, 0.25)` and `(2, 0.25)`.
-This calibrates straight and corner connections for that wall, not other assets or the preview's
-rectangular footprint. Placeholder assets can appear as missing-asset markers in TaleSpire.
+The preview draws straight walls and doors around their connection line using the configured thickness.
+The Tavern reference slabs identify the dedicated corner (`ce1e617e-f031-4011-b64e-ba262082b20f`)
+and the 1-unit filler (`82b03fd9-1afb-463f-a3f8-2f30204d6561`). The straight-wall reference
+confirms that the filler bridges a 1-unit gap at rotation step 6 when the long walls are at step 12.
+Neither piece is used in generation yet. Room dimensions still need to be even because the floor
+uses 2×2 tiles. Placeholder assets can appear as missing-asset markers in TaleSpire.
 
 ## Tests
 ```bash

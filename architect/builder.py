@@ -2,9 +2,7 @@
 
 The builder never asks the LLM for coordinates. It ingests a validated JSON recipe
 (see ``query.py``) and mechanically snaps calibrated assets together through their
-ports. Every structural piece is positioned by aligning one of its ports with an open
-port on an already-placed piece, so builds are gap-free by construction and do not
-depend on where TaleSpire puts an asset's pivot.
+ports. Structural runs are assembled by aligning ports relative to each asset's pivot.
 
 Coordinate frame: x = east, z = north, y = up. One TaleSpire tile = 1 unit.
 Rotations are quarter turns ``q`` (0..3) about the asset's origin, clockwise when
@@ -141,7 +139,12 @@ class Placement:
 
     def footprint(self) -> tuple[float, float, float, float]:
         w, d = self.asset.size
-        pts = [rotate(cx, cz, self.q) for cx, cz in ((0, 0), (w, 0), (0, d), (w, d))]
+        x0, z0 = (0.0, 0.0)
+        if self.category in ("wall", "door"):
+            x0, center_z = self.asset.port("W")
+            w = self.asset.port("E")[0] - x0
+            z0 = center_z - d / 2
+        pts = [rotate(cx, cz, self.q) for cx in (x0, x0 + w) for cz in (z0, z0 + d)]
         xs = [self.x + p[0] for p in pts]
         zs = [self.z + p[1] for p in pts]
         return min(xs), min(zs), max(xs), max(zs)
@@ -231,19 +234,27 @@ def _chain_walls(lib: Library, theme: dict, spec: ZoneSpec, y: float,
     """
     wall = lib.get(theme["wall"])
     door = lib.get(theme["door"])
-    seg = wall.size[0]
+    west, east = wall.port("W"), wall.port("E")
+    seg = east[0] - west[0]
+    if seg <= _EPS or not math.isclose(east[1], west[1], abs_tol=_EPS):
+        raise BuildError(f"wall '{wall.name}' must have straight W and E ports")
     runs = (("S", 2, spec.width), ("W", 3, spec.depth), ("N", 0, spec.width), ("E", 1, spec.depth))
-    start = (float(spec.width), 0.0)
-    cursor = start
+    cursor = (float(spec.width), 0.0)
     out: list[Placement] = []
     for side, q, length in runs:
         count = int(round(length / seg))
+        if not math.isclose(count * seg, length, abs_tol=_EPS):
+            raise BuildError(f"wall '{wall.name}' cannot fill side {side} of '{spec.name}' exactly")
+        dx, dz = rotate(length, 0, q)
+        end = (cursor[0] + dx, cursor[1] + dz)
         door_idx = -1
         if side in spec.door_sides:
-            # Dry-run the chain along this side to find an unobstructed door segment.
+            dw, de = door.port("W"), door.port("E")
+            if math.dist((de[0] - dw[0], de[1] - dw[1]), (seg, 0)) > _EPS:
+                raise BuildError(f"door '{door.name}' must span one '{wall.name}' segment")
             probe, segs = cursor, []
             for _ in range(count):
-                p = snap(wall, "W", probe, y, q)
+                p = snap(door, "W", probe, y, q, category="door")
                 segs.append(p.footprint())
                 probe = p.port_world("E")
             for i in sorted(range(count), key=lambda i: (abs(i - (count - 1) / 2), i)):
@@ -258,8 +269,9 @@ def _chain_walls(lib: Library, theme: dict, spec: ZoneSpec, y: float,
             cursor = p.port_world("E")
             if side not in spec.open_sides:
                 out.append(p)
-    if math.dist(cursor, start) > 1e-3:
-        raise BuildError(f"wall chain for '{spec.name}' did not close (gap at {cursor}); check port calibration")
+        if math.dist(cursor, end) > 1e-3:
+            raise BuildError(f"wall side {side} of '{spec.name}' did not reach its corner; check port calibration")
+        cursor = end
     return out
 
 

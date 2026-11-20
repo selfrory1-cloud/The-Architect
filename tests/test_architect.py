@@ -1,10 +1,11 @@
 import math
+from dataclasses import replace
 
 import pytest
 
 from app import app
 from architect import slab
-from architect.builder import Library, Placement, build, rotate, snap
+from architect.builder import BuildError, Library, Placement, build, rotate, snap
 from architect.query import RecipeError, apply_llm_theming, build_recipe
 
 LIB = Library.load()
@@ -70,6 +71,38 @@ def test_adjacent_rooms_share_a_wall_with_interior_door():
     centers = [tuple(round(v, 3) for v in p.center()) for p in segs]
     assert len(centers) == len(set(centers)), "shared wall placed twice"
     assert res.stats()["by_category"]["door"] == 2  # entrance + interior
+
+
+@pytest.mark.parametrize(("width", "depth"), [(8, 8), (6, 10), (10, 4)])
+def test_wall_runs_match_each_floor_edge_after_door_replacement(width, depth):
+    res = make(room_width=width, room_depth=depth, furnish=False, roof=False)
+    segments = [p for p in res.placements if p.category in ("door", "wall")]
+    expected = {
+        2: (0, width, 0),
+        3: (0, depth, 0),
+        0: (0, width, depth),
+        1: (0, depth, width),
+    }
+    for q, (start, end, fixed) in expected.items():
+        along = q % 2
+        across = 1 - along
+        spans = []
+        for p in segments:
+            if p.q == q:
+                w, e = p.port_world("W"), p.port_world("E")
+                assert w[across] == e[across] == fixed
+                assert p.center()[across] == fixed
+                spans.append(tuple(sorted((w[along], e[along]))))
+        assert sorted(spans) == [(i, i + 2) for i in range(start, end, 2)]
+
+
+def test_wall_run_rejects_miscalibrated_door_even_if_loop_would_close():
+    door = LIB.get("Tavern_Door_01")
+    broken = replace(door, ports={**door.ports, "E": (2, 0.5)})
+    lib = Library({**LIB.assets, door.name: broken}, LIB.themes)
+    recipe, _ = build_recipe({}, lib)
+    with pytest.raises(BuildError, match="must span one"):
+        build(recipe, lib)
 
 
 def test_multi_floor_stacks_on_wall_height_with_stairwell_and_hole():
