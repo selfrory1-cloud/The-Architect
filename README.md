@@ -58,6 +58,19 @@ even to fit the 2-unit wall runs. Placeholder assets can appear as missing-asset
 
 ## Tests
 ```bash
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest
+.venv/bin/python -m pip install -r requirements.txt -r requirements-dev.txt
+.venv/bin/python -m pytest -q
 ```
+
+On Windows CMD, replace `.venv/bin/python` with `.venv\Scripts\python.exe`.
+GitHub Actions runs the same suite on Linux and Windows on pull requests and pushes to `main`.
+
+The [8×8 Tavern](tests/fixtures/slabs/tavern-8x8.json) and
+[22×8 Tavern](tests/fixtures/slabs/tavern-22x8.json) are correctness benchmarks, not speed benchmarks.
+They record the form inputs and reference slab exports. The test compares decoded UUIDs, positions,
+rotations, and duplicate counts, not gzip bytes. Only the two documented markers are excluded from
+the 8×8 reference; nothing is filtered out of generated output.
+
+For layout changes, use a short-lived branch and a focused pull request. Add a reference fixture
+for new layouts once they have been checked in TaleSpire. Only update an existing reference for an
+intentional placement change, and explain the in-game check in the pull request.

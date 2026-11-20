@@ -1,0 +1,23 @@
+{
+  "source": "Hand-adjusted TaleSpire export; the tester later confirmed that the generated 8x8 room looked correct in-game. The original export still contains the temporary floor and door markers.",
+  "form": {
+    "theme": "tavern",
+    "floors": 1,
+    "rooms_per_floor": 1,
+    "room_width": 8,
+    "room_depth": 8,
+    "furnish": false,
+    "roof": false,
+    "seed": 0
+  },
+  "excluded_reference_uuids": [
+    "00000000-0000-4000-8000-000000000001",
+    "00000000-0000-4000-8000-000000000002"
+  ],
+  "expected_counts": {
+    "floor": 56,
+    "door": 1,
+    "wall": 16
+  },
+  "slab": "H4sIAAAAAAAACmWQvUsDQRDFd7NBOVAuiEHQwB2pxKwfWNklWggWKY2HWJy4gpWFTdrDTqutYqMg+A8INoIidm4VsbBId60IgpBCTePO7YsJuMU9Zt773cxu+6f9kmMj7O/UEqec/+/lCvbTLKxtHjXmN1reyUPv+/1i3PY6n8uq2bqtn55NzUzOvTaI7VSvj3vT1fWrr8WlsL6/K2zvbi9+PtwZXb15Ox/bfto6WLE9acM1u8B9bqCPE6gD1BXGFHN+P9+FUp/y1CftQrN8gHyAfIB8BfkK8lYjOyddYIKUzofV2EvypGnRaVxO8pq7nGFO2ZDS0UMPF5aSrLr0nYYi4SZzEk7/C4Xbw9b5LDfLBN23r3HZaVhymhbh+/A9+MLtTVwELgIXgYvAReAicHR/4kiJIyWOlLjM9+F78IW7L3GkxLn74j2K8H34Hnzh3o1qjbkaczXmaszVmKv5IE+8BCfBSXASnAQnwUk+mEucwb4G+xrsa7CvwZ4KeYW8Ql4hr5BXuI9i/Xf5BWnY9t1UAwAA"
+}

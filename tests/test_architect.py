@@ -1,5 +1,8 @@
+import json
 import math
+from collections import Counter
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -47,28 +50,20 @@ REF_HAND_ADJUSTED_8X8 = (
     "BKFB8h+4IPIg+guUBusTh+oTh+oTh6pXhqpXhqpXhpgH0gc2VxzKB4oHMYPsaWAB0R+4IHSBOJSv3MDCAHZfA2MXUP0F"
     "SwbmQ4wQ+hcDhDaC0gxgexvAvgLqB9NA8xiNoO7/BaW7oO44BPUHAwMAtSMI2lABAAA="
 )
-REF_WITH_FLOOR_AND_DOOR_8X8 = (
-    "H4sIAAAAAAAACmWQvUsDQRDFd7NBOVAuiEHQwB2pxKwfWNklWggWKY2HWJy4gpWFTdrDTqutYqMg+A8INoIidm4VsbBId60I"
-    "gpBCTePO7YsJuMU9Zt773cxu+6f9kmMj7O/UEqec/+/lCvbTLKxtHjXmN1reyUPv+/1i3PY6n8uq2bqtn55NzUzOvTaI7"
-    "VSvj3vT1fWrr8WlsL6/K2zvbi9+PtwZXb15Ox/bfto6WLE9acM1u8B9bqCPE6gD1BXGFHN+P9+FUp/y1CftQrN8"
-    "gHyAfIB8BfkK8lYjOyddYIKUzofV2EvypGnRaVxO8pq7nGFO2ZDS0UMPF5aSrLr0nYYi4SZzEk7/C4Xbw9b5LD"
-    "fLBN23r3HZaVhymhbh+/A9+MLtTVwELgIXgYvAReAicHR/4kiJIyWOlLjM9+F78IW7L3GkxLn74j2K8H34Hnzh"
-    "3o1qjbkaczXmaszVmKv5IE+8BCfBSXASnAQnwUk+mEucwb4G+xrsa7CvwZ4KeYW8Ql4hr5BXuI9i/Xf5BWnY9t1UAwAA"
-)
 
 
-def test_api_tavern_matches_in_game_room_without_placeholder_floor_or_door():
-    response = app.test_client().post("/api/generate", json={
-        "theme": "tavern", "room_width": 8, "room_depth": 8, "furnish": False, "roof": False,
-    })
+@pytest.mark.parametrize("fixture_name", ["tavern-8x8", "tavern-22x8"])
+def test_api_tavern_matches_reference_room(fixture_name):
+    path = Path(__file__).with_name("fixtures") / "slabs" / f"{fixture_name}.json"
+    reference = json.loads(path.read_text(encoding="utf-8"))
+    response = app.test_client().post("/api/generate", json=reference["form"])
     assert response.status_code == 200
     data = response.get_json()
-    expected = [a for a in slab.decode(REF_WITH_FLOOR_AND_DOOR_8X8)
-                if not a.uuid.startswith("00000000-0000-4000-8000-")]
-    assert data["stats"]["by_category"] == {"floor": 56, "door": 1, "wall": 16}
-    actual = slab.decode(data["slab"])
-    assert len(actual) == len(expected)
-    assert set(actual) == set(expected)
+    expected = Counter(a for a in slab.decode(reference["slab"])
+                       if a.uuid not in reference["excluded_reference_uuids"])
+    actual = Counter(slab.decode(data["slab"]))
+    assert actual == expected
+    assert data["stats"]["by_category"] == reference["expected_counts"]
     assert not data["warnings"]
 
 
