@@ -133,3 +133,71 @@ $("#decode").addEventListener("click", async () => {
   const data = await resp.json();
   $("#decode-output").textContent = JSON.stringify(data.ok ? data : data.errors, null, 2);
 });
+
+const catalogPageSize = 50;
+let catalogOffset = 0;
+let catalogTimer = null;
+
+async function loadCatalog(reset = false) {
+  if (reset) catalogOffset = 0;
+  const params = new URLSearchParams({
+    q: $("#catalog-search").value,
+    category: $("#catalog-category").value,
+    limit: String(catalogPageSize),
+    offset: String(catalogOffset),
+  });
+  const response = await fetch(`/api/catalog?${params}`);
+  const data = await response.json();
+  if (!response.ok) {
+    $("#catalog-count").textContent = (data.errors || ["Could not load catalog"]).join("; ");
+    return;
+  }
+  const category = $("#catalog-category");
+  if (category.options.length === 1) {
+    for (const name of data.categories) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      category.appendChild(option);
+    }
+  }
+  const body = $("#catalog-table tbody");
+  body.replaceChildren();
+  for (const asset of data.entries) {
+    const row = document.createElement("tr");
+    for (const value of [
+      asset.name,
+      asset.key,
+      asset.category,
+      asset.uuid,
+      asset.calibrated ? "Placement ready" : "Catalog only",
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+    body.appendChild(row);
+  }
+  const first = data.total ? data.offset + 1 : 0;
+  const last = Math.min(data.offset + data.entries.length, data.total);
+  $("#catalog-count").textContent = `${first}–${last} of ${data.total} entries`;
+  $("#catalog-prev").disabled = data.offset === 0;
+  $("#catalog-next").disabled = data.offset + data.entries.length >= data.total;
+}
+
+$("#catalog-search").addEventListener("input", () => {
+  clearTimeout(catalogTimer);
+  catalogTimer = setTimeout(() => loadCatalog(true), 200);
+});
+$("#catalog-category").addEventListener("change", () => loadCatalog(true));
+$("#catalog-prev").addEventListener("click", () => {
+  catalogOffset = Math.max(0, catalogOffset - catalogPageSize);
+  loadCatalog();
+});
+$("#catalog-next").addEventListener("click", () => {
+  catalogOffset += catalogPageSize;
+  loadCatalog();
+});
+loadCatalog().catch((err) => {
+  $("#catalog-count").textContent = `Could not load catalog: ${err}`;
+});

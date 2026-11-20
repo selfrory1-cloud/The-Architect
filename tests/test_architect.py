@@ -8,8 +8,10 @@ import pytest
 
 from app import app
 from architect import slab
+from architect.catalog import search_catalog
 from architect.builder import BuildError, Library, Placement, build, rotate, snap
 from architect.query import RecipeError, apply_llm_theming, build_recipe
+from scripts.import_master_asset_catalog import extract_catalog
 
 LIB = Library.load()
 WALL_UUID = "55421077-5672-492d-9609-89befbf9eb9d"
@@ -208,3 +210,47 @@ def test_api_generate_and_decode():
     assert any(a["library_name"] == "Tavern_Wall_01" for a in dec["assets"])
     bad = client.post("/api/generate", json={"room_width": 3})
     assert bad.status_code == 400 and bad.get_json()["errors"]
+
+
+def test_full_catalog_preserves_same_named_assets_and_is_separate_from_builder_assets():
+    calibrated = {asset.uuid for asset in LIB.assets.values() if asset.calibrated}
+    catalog = search_catalog(limit=100, calibrated_uuids=calibrated)
+    all_assets = search_catalog(limit=2500, calibrated_uuids=calibrated)["entries"]
+    assert catalog["total"] == 2431
+    assert len({asset["uuid"] for asset in all_assets}) == 2431
+    repeated = search_catalog(query="Aberration Floor 2x2", category="Aberration", limit=20)["entries"]
+    assert len(repeated) == 9
+    assert len({asset["uuid"] for asset in repeated}) == 9
+    assert any(asset["name"] == "Tavern Floor 01" and asset["calibrated"] for asset in all_assets)
+    assert sum(asset["calibrated"] for asset in all_assets) == 4
+
+
+def test_catalog_api_filters_and_paginates():
+    client = app.test_client()
+    first = client.get("/api/catalog?q=Aberration+Floor+2x2&category=Aberration&limit=5")
+    assert first.status_code == 200
+    data = first.get_json()
+    assert data["total"] == 9
+    assert len(data["entries"]) == 5
+    assert all("Aberration Floor 2x2" in asset["name"] for asset in data["entries"])
+    second = client.get("/api/catalog?q=Aberration+Floor+2x2&category=Aberration&limit=5&offset=5")
+    assert len(second.get_json()["entries"]) == 4
+    assert client.get("/api/catalog?limit=500").status_code == 400
+
+
+def test_catalog_importer_preserves_duplicate_keys_without_executing_source():
+    source = '''
+MASTER_ASSET_LIBRARY = {
+    "same": {"uuid": "f73bfb13-c5be-4739-b59a-6aea7f3419b4", "name": "Same", "category": "A"},
+    "same": {"uuid": "c1dc879b-433a-4c7a-bfc5-c6b49da90c6f", "name": "Same", "category": "B"},
+}
+raise RuntimeError("source code must never execute")
+'''
+    entries = extract_catalog(source)
+    assert len(entries) == 2
+    assert [entry["category"] for entry in entries] == ["A", "B"]
+    with pytest.raises(ValueError, match="duplicate asset UUID"):
+        extract_catalog(source.replace(
+            "c1dc879b-433a-4c7a-bfc5-c6b49da90c6f",
+            "f73bfb13-c5be-4739-b59a-6aea7f3419b4",
+        ))

@@ -21,6 +21,7 @@ Environment options: `PORT`, `HOST`, `FLASK_DEBUG=1`, and for the optional LLM s
 | `architect/builder.py` | Port-snapping engine: floor growth, anchored wall runs with fillers, doors, stairwells, multi-level stacking, zone prefabs |
 | `architect/slab.py` | TaleSpire slab v2 encoder/decoder ([spec](https://github.com/Bouncyrock/DumbSlabStats/blob/master/format.md)) |
 | `assets.json` | Calibrated asset library (uuid, kind, size, height, ports) |
+| `data/master_asset_catalog.json` | Searchable name/UUID/category index; not a placement library |
 | `themes.json` | Themes → wall/door/floor/stairs/roof assets, room roles and prop sets |
 
 How a build is assembled:
@@ -55,6 +56,27 @@ Geometry, verified against in-game reference slabs:
 
 The dedicated corner piece (`ce1e617e-f031-4011-b64e-ba262082b20f`) is not used yet. Room dimensions must be
 even to fit the 2-unit wall runs. Placeholder assets can appear as missing-asset markers in TaleSpire.
+
+## Asset catalog
+The full searchable index comes from the user-provided `MASTER_ASSET_LIBRARY` listing. Its records
+are stored as an array, keyed by UUID in the data, because some display names repeat; converting it
+to a Python or JSON object keyed by name would silently discard entries. The web page's Asset catalog
+searches by name, category, or UUID and marks the few assets already calibrated for placement.
+
+The index contains names, UUIDs, and categories only. It deliberately does not populate `assets.json`:
+the builder also requires an asset kind, size, height, connection ports, and in-game calibration.
+An entry becomes placement-ready only after those geometric details are verified.
+
+To refresh the index from a compatible master Python listing, run:
+```bash
+python scripts/import_master_asset_catalog.py --source /path/to/master_asset_library.py
+```
+On Windows CMD, for example:
+```cmd
+.venv\Scripts\python.exe scripts\import_master_asset_catalog.py --source "%USERPROFILE%\Downloads\master_asset_library.py"
+```
+The importer reads the literal assignment with Python's AST and never imports or executes the source.
+It preserves duplicate names, rejects duplicate UUIDs, and writes `data/master_asset_catalog.json`.
 
 ## Tests
 ```bash
