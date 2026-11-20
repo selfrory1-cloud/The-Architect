@@ -1,0 +1,222 @@
+{
+  "tavern": {
+    "label": "Tavern",
+    "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
+    "door": "Tavern_Door_01",
+    "floor": "Tavern_Floor_01",
+    "floor_inset_z": 0.5,
+    "stairs": "Tavern_Stairs_01",
+    "roof": "Tavern_Roof_Flat_01",
+    "ground_roles": [
+      "Tavern Entrance",
+      "Dining Area",
+      "Bar",
+      "Kitchen"
+    ],
+    "upper_roles": [
+      "Guest Room",
+      "Hallway",
+      "Storage"
+    ],
+    "props": {
+      "Tavern Entrance": [
+        "Bench_01",
+        "Barrel_01"
+      ],
+      "Dining Area": [
+        "Table_Round_01",
+        "Chair_Wood_01",
+        "Fireplace_01"
+      ],
+      "Bar": [
+        "Bar_Counter_01",
+        "Barrel_01",
+        "Chair_Wood_01"
+      ],
+      "Kitchen": [
+        "Cauldron_01",
+        "Crate_01",
+        "Barrel_01"
+      ],
+      "Guest Room": [
+        "Bed_01",
+        "Chair_Wood_01",
+        "Table_Round_01"
+      ],
+      "Hallway": [
+        "Bench_01"
+      ],
+      "Storage": [
+        "Crate_01",
+        "Barrel_01"
+      ]
+    }
+  },
+  "house": {
+    "label": "House",
+    "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
+    "door": "Tavern_Door_01",
+    "floor": "Tavern_Floor_01",
+    "floor_inset_z": 0.5,
+    "stairs": "Tavern_Stairs_01",
+    "roof": "Tavern_Roof_Flat_01",
+    "ground_roles": [
+      "Entrance",
+      "Living Room",
+      "Kitchen"
+    ],
+    "upper_roles": [
+      "Bedroom",
+      "Study"
+    ],
+    "props": {
+      "Entrance": [
+        "Bench_01"
+      ],
+      "Living Room": [
+        "Fireplace_01",
+        "Chair_Wood_01",
+        "Table_Round_01"
+      ],
+      "Kitchen": [
+        "Cauldron_01",
+        "Table_Round_01",
+        "Barrel_01"
+      ],
+      "Bedroom": [
+        "Bed_01",
+        "Chair_Wood_01"
+      ],
+      "Study": [
+        "Bookshelf_01",
+        "Table_Round_01",
+        "Chair_Wood_01"
+      ]
+    }
+  },
+  "shop": {
+    "label": "Shop",
+    "wall": "Tavern_Wall_01",
+    "wall_filler": "Tavern_Wall_Filler_01",
+    "door": "Tavern_Door_01",
+    "floor": "Tavern_Floor_01",
+    "floor_inset_z": 0.5,
+    "stairs": "Tavern_Stairs_01",
+    "roof": "Tavern_Roof_Flat_01",
+    "ground_roles": [
+      "Shop Floor",
+      "Storeroom"
+    ],
+    "upper_roles": [
+      "Living Quarters",
+      "Storage"
+    ],
+    "props": {
+      "Shop Floor": [
+        "Bar_Counter_01",
+        "Crate_01",
+        "Weapon_Rack_01"
+      ],
+      "Storeroom": [
+        "Crate_01",
+        "Barrel_01"
+      ],
+      "Living Quarters": [
+        "Bed_01",
+        "Table_Round_01",
+        "Chair_Wood_01"
+      ],
+      "Storage": [
+        "Crate_01",
+        "Barrel_01"
+      ]
+    }
+  },
+  "dungeon": {
+    "label": "Dungeon",
+    "wall": "Stone_Wall_01",
+    "door": "Stone_Door_01",
+    "floor": "Stone_Floor_01",
+    "stairs": "Stone_Stairs_01",
+    "roof": "Stone_Roof_Flat_01",
+    "ground_roles": [
+      "Guard Room",
+      "Cell Block",
+      "Armory",
+      "Torture Chamber"
+    ],
+    "upper_roles": [
+      "Barracks",
+      "Storage"
+    ],
+    "props": {
+      "Guard Room": [
+        "Table_Round_01",
+        "Chair_Wood_01",
+        "Brazier_01"
+      ],
+      "Cell Block": [
+        "Cage_01"
+      ],
+      "Armory": [
+        "Weapon_Rack_01",
+        "Crate_01"
+      ],
+      "Torture Chamber": [
+        "Brazier_01",
+        "Cauldron_01"
+      ],
+      "Barracks": [
+        "Bed_01",
+        "Crate_01"
+      ],
+      "Storage": [
+        "Crate_01",
+        "Barrel_01"
+      ]
+    }
+  },
+  "temple": {
+    "label": "Temple",
+    "wall": "Stone_Wall_01",
+    "door": "Stone_Door_01",
+    "floor": "Stone_Floor_01",
+    "stairs": "Stone_Stairs_01",
+    "roof": "Stone_Roof_Flat_01",
+    "ground_roles": [
+      "Narthex",
+      "Sanctuary",
+      "Vestry"
+    ],
+    "upper_roles": [
+      "Library",
+      "Cloister"
+    ],
+    "props": {
+      "Narthex": [
+        "Brazier_01",
+        "Bench_01"
+      ],
+      "Sanctuary": [
+        "Altar_01",
+        "Bench_01",
+        "Brazier_01"
+      ],
+      "Vestry": [
+        "Bookshelf_01",
+        "Crate_01"
+      ],
+      "Library": [
+        "Bookshelf_01",
+        "Table_Round_01",
+        "Chair_Wood_01"
+      ],
+      "Cloister": [
+        "Bench_01",
+        "Brazier_01"
+      ]
+    }
+  }
+}

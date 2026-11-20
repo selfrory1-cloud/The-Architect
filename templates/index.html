@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Architect — TaleSpire Builder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+  <h1>The Architect</h1>
+  <p>Procedural TaleSpire slab generator — port-snapping engine</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Build settings</h2>
+    <form id="build-form">
+      <label>Theme
+        <select name="theme">
+          {% for key, label in themes.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="row">
+        <label>Floors
+          <input type="number" name="floors" value="1" min="{{ limits.floors[0] }}" max="{{ limits.floors[1] }}" required>
+        </label>
+        <label>Rooms per floor
+          <input type="number" name="rooms_per_floor" value="2" min="{{ limits.rooms_per_floor[0] }}" max="{{ limits.rooms_per_floor[1] }}" required>
+        </label>
+      </div>
+      <div class="row">
+        <label>Room width (tiles)
+          <input type="number" name="room_width" value="8" step="2" min="{{ limits.room_width[0] }}" max="{{ limits.room_width[1] }}" required>
+        </label>
+        <label>Room depth (tiles)
+          <input type="number" name="room_depth" value="8" step="2" min="{{ limits.room_depth[0] }}" max="{{ limits.room_depth[1] }}" required>
+        </label>
+      </div>
+      <div class="row">
+        <label>Prop density
+          <input type="range" name="prop_density" min="0" max="1" step="0.05" value="0.35">
+        </label>
+        <label>Seed
+          <input type="number" name="seed" value="0" min="0">
+        </label>
+      </div>
+      <div class="row checks">
+        <label><input type="checkbox" name="furnish" checked> Furnish rooms</label>
+        <label><input type="checkbox" name="roof" checked> Flat roof</label>
+      </div>
+      <label>Description (optional, LLM themes room names/props)
+        <textarea name="description" rows="3" placeholder="A cosy harbour-side tavern with a busy bar and guest rooms upstairs"></textarea>
+      </label>
+      <label class="checks"><input type="checkbox" name="use_llm"> Use LLM (Ollama: {{ ollama_model }})</label>
+      <p class="hint">Room sizes must be even. Multi-floor builds need depth ≥ 8 for the stairwell.</p>
+      <button type="submit">Generate slab</button>
+    </form>
+  </section>
+
+  <section class="panel" id="output">
+    <h2>Slab code</h2>
+    <div id="messages"></div>
+    <textarea id="slab" rows="6" readonly placeholder="Generate a build to get a slab code"></textarea>
+    <div class="row">
+      <button type="button" id="copy" disabled>Copy slab</button>
+      <button type="button" id="download-recipe" disabled>Download recipe JSON</button>
+    </div>
+    <div id="stats"></div>
+    <h3>Floor plan</h3>
+    <div id="level-tabs"></div>
+    <div id="plan"></div>
+    <div class="legend">
+      <span class="lg floor"></span>Floor <span class="lg wall"></span>Wall <span class="lg door"></span>Door
+      <span class="lg stairs"></span>Stairs <span class="lg prop"></span>Prop
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Slab decoder <small>(calibration helper)</small></h2>
+    <p class="hint">Paste a slab copied from TaleSpire to read its asset UUIDs, positions and rotations —
+      use this to calibrate entries in <code>assets.json</code>.</p>
+    <textarea id="decode-input" rows="4" placeholder="H4sIA..."></textarea>
+    <button type="button" id="decode">Decode</button>
+    <pre id="decode-output"></pre>
+  </section>
+</main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
