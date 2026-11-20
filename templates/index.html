@@ -84,6 +84,32 @@
     <button type="button" id="decode">Decode</button>
     <pre id="decode-output"></pre>
   </section>
+
+  <section class="panel">
+    <h2>Asset catalog <small>(name and UUID index)</small></h2>
+    <p class="hint">Search the imported asset index by name, category, or UUID. Catalog-only assets do not yet
+      have verified size and ports, so they cannot be placed by the builder. Only assets marked
+      <strong>Placement ready</strong> are calibrated for generation.</p>
+    <div class="row">
+      <label>Search
+        <input id="catalog-search" type="search" placeholder="e.g. Tavern floor, Door, UUID">
+      </label>
+      <label>Category
+        <select id="catalog-category"><option value="">All categories</option></select>
+      </label>
+    </div>
+    <div id="catalog-count" class="hint" aria-live="polite"></div>
+    <div class="catalog-table-wrap">
+      <table id="catalog-table">
+        <thead><tr><th>Name</th><th>Category</th><th>UUID</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row catalog-pagination">
+      <button type="button" id="catalog-prev" disabled>Previous</button>
+      <button type="button" id="catalog-next" disabled>Next</button>
+    </div>
+  </section>
 </main>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

@@ -9,6 +9,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 from architect import slab
+from architect.catalog import search_catalog
 from architect.builder import BuildError, Library, build
 from architect.query import LIMITS, OLLAMA_MODEL, RecipeError, build_recipe
 
@@ -73,6 +74,33 @@ def api_library():
         "assets": {n: {"kind": a.kind, "uuid": a.uuid, "calibrated": a.calibrated,
                        "size": a.size, "height": a.height} for n, a in lib.assets.items()},
     })
+
+
+@app.get("/api/catalog")
+def api_catalog():
+    def page_int(key: str, default: int) -> int:
+        try:
+            return int(request.args.get(key, default))
+        except ValueError:
+            raise ValueError(f"{key} must be a whole number") from None
+
+    try:
+        limit = page_int("limit", 50)
+        offset = page_int("offset", 0)
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        if offset < 0:
+            raise ValueError("offset must be zero or greater")
+        lib = library()
+        return jsonify(search_catalog(
+            query=request.args.get("q", ""),
+            category=request.args.get("category", ""),
+            limit=limit,
+            offset=offset,
+            calibrated_uuids={asset.uuid for asset in lib.assets.values() if asset.calibrated},
+        ))
+    except ValueError as exc:
+        return jsonify({"ok": False, "errors": [str(exc)]}), 400
 
 
 if __name__ == "__main__":

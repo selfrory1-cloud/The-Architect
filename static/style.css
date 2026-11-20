@@ -43,3 +43,9 @@ button:disabled { opacity: .4; cursor: default; }
 .lg.floor { background: var(--floor); } .lg.wall { background: var(--wall); } .lg.door { background: var(--door); }
 .lg.stairs { background: var(--stairs); } .lg.prop { background: var(--prop); }
 pre { background: #15120e; padding: .75rem; border-radius: 4px; overflow: auto; max-height: 300px; font-size: .8rem; }
+.catalog-table-wrap { max-height: 480px; overflow: auto; border: 1px solid #4a3f33; border-radius: 4px; }
+#catalog-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+#catalog-table th, #catalog-table td { padding: .5rem; border-bottom: 1px solid #3a3128; text-align: left; }
+#catalog-table th { position: sticky; top: 0; background: #26201a; }
+#catalog-table td:nth-child(3) { font-family: ui-monospace, monospace; }
+.catalog-pagination { justify-content: flex-end; }
